@@ -3320,14 +3320,30 @@ body {
   var cajon = boton && document.getElementById(boton.getAttribute('aria-controls'));
   if (boton && cajon) {
     var velo = cajon.previousElementSibling;
+    var reloj = null;
+    // Esconder con translate a secas es fragil: si el navegador no aplica esa
+    // propiedad -pasa en Safari viejos-, el panel se queda a la vista encima
+    // de la pagina, que es lo que le salia a Alina. Asi que manda visibility,
+    // que la entiende cualquiera, y translate solo hace la animacion. Al
+    // cerrar se espera a que termine el deslizamiento para ocultarlo.
     var pinta = function (abre) {
       cajon.setAttribute('aria-hidden', abre ? 'false' : 'true');
-      cajon.style.translate = abre ? '0' : '-100%';
-      cajon.style.visibility = 'visible';
+      if (reloj) { clearTimeout(reloj); reloj = null; }
+      if (abre) {
+        cajon.style.visibility = 'visible';
+        cajon.style.translate = '0';
+        cajon.style.transform = 'none';
+      } else {
+        cajon.style.translate = '-100%';
+        cajon.style.transform = '';
+        reloj = setTimeout(function () {
+          if (!abierto) cajon.style.visibility = 'hidden';
+        }, 340);
+      }
       cajon.style.pointerEvents = abre ? 'auto' : 'none';
       if (velo) {
         velo.style.opacity = abre ? '1' : '0';
-        velo.style.visibility = 'visible';
+        velo.style.visibility = abre ? 'visible' : 'hidden';
         velo.style.pointerEvents = abre ? 'auto' : 'none';
       }
       boton.setAttribute('aria-expanded', abre ? 'true' : 'false');
@@ -3338,6 +3354,7 @@ body {
       }
     };
     pinta(false);
+    cajon.style.visibility = 'hidden';
     boton.addEventListener('click', function () { abierto = !abierto; pinta(abierto); });
     if (velo) velo.addEventListener('click', function () { abierto = false; pinta(false); });
     Array.prototype.forEach.call(cajon.querySelectorAll('button[aria-expanded]'), function (b) {
