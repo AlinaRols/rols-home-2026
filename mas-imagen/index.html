@@ -3279,66 +3279,60 @@ body {
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
-  // Cajon lateral: abre, cierra y despliega niveles.
+  // Cajon lateral. No se inventa nada: se ponen y se quitan LAS MISMAS clases
+  // que pone y quita React en site-header.tsx, que es la version que funciona.
+  // Antes esto se hacia con estilos en linea -visibility, translate, un
+  // backgroundColor calculado, un translateZ(0) para Safari- y cada arreglo
+  // tapaba el anterior sin tocar la causa.
   var abierto = false;
   var boton = Array.prototype.filter.call(
     document.querySelectorAll('header button[aria-controls]'),
     function (b) { return /men/i.test(b.getAttribute('aria-label') || ''); })[0];
   var cajon = boton && document.getElementById(boton.getAttribute('aria-controls'));
+  var cabecera = document.querySelector('header');
   if (boton && cajon) {
     var velo = cajon.previousElementSibling;
     var reloj = null;
 
-    // El fondo y el filete van por estilo en linea y no fiados a la clase.
-    // En Safari el panel se abria transparente -se veia el video detras- y
-    // con esto se pinta si o si. El color se lee de la variable del sitio,
-    // con blanco de respaldo.
-    // Capa propia tambien en reposo, y aislada del resto de la pagina.
-    cajon.style.isolation = 'isolate';
-    var raiz = getComputedStyle(document.documentElement);
-    var fondo = (raiz.getPropertyValue('--background') || '').trim() || '#ffffff';
-    var linea = (raiz.getPropertyValue('--line') || '').trim() || 'rgba(0,0,0,.12)';
-    cajon.style.backgroundColor = fondo;
-    cajon.style.borderRight = '1px solid ' + linea;
-    if (velo) velo.style.backgroundColor = 'rgba(0,0,0,.18)';
+    var clases = function (el, quita, pon) {
+      if (!el) return;
+      quita.forEach(function (c) { el.classList.remove(c); });
+      pon.forEach(function (c) { el.classList.add(c); });
+    };
 
-    // Esconder con translate a secas es fragil: si el navegador no aplica esa
-    // propiedad, el panel se queda a la vista encima de la pagina. Asi que
-    // manda visibility, que la entiende cualquiera, y translate solo anima.
     var pinta = function (abre) {
-      cajon.setAttribute('aria-hidden', abre ? 'false' : 'true');
       if (reloj) { clearTimeout(reloj); reloj = null; }
+      cajon.setAttribute('aria-hidden', abre ? 'false' : 'true');
+      boton.setAttribute('aria-expanded', abre ? 'true' : 'false');
+      document.body.style.overflow = abre ? 'hidden' : '';
+
       if (abre) {
-        cajon.style.visibility = 'visible';
-        cajon.style.translate = '0';
-        // translateZ(0) y no 'none': obliga a Safari a darle capa propia al
-        // panel. Sin capa, un <video> acelerado se pinta por encima y el
-        // cajon aparecia sin su fondo, con la pagina viendose detras.
-        cajon.style.transform = 'translateZ(0)';
+        // Con el cajon abierto la cabecera nunca va desplazada, igual que en
+        // el componente: alli "escondida" exige que no haya panel abierto.
+        if (cabecera) { cabecera.style.translate = ''; cabecera.style.pointerEvents = ''; }
+        clases(cajon, ['pointer-events-none', '-translate-x-full', 'invisible'],
+                      ['pointer-events-auto', 'visible', 'translate-x-0']);
+        clases(velo, ['pointer-events-none', 'opacity-0', 'invisible'],
+                     ['pointer-events-auto', 'visible', 'opacity-100']);
       } else {
-        cajon.style.translate = '-100%';
-        cajon.style.transform = '';
+        clases(cajon, ['pointer-events-auto', 'translate-x-0'],
+                      ['pointer-events-none', '-translate-x-full']);
+        clases(velo, ['pointer-events-auto', 'opacity-100'],
+                     ['pointer-events-none', 'opacity-0']);
+        // El componente devuelve el "invisible" cuando acaba la transicion.
         reloj = setTimeout(function () {
-          if (!abierto) cajon.style.visibility = 'hidden';
+          if (abierto) return;
+          clases(cajon, ['visible'], ['invisible']);
+          clases(velo, ['visible'], ['invisible']);
         }, 340);
       }
-      cajon.style.pointerEvents = abre ? 'auto' : 'none';
-      if (velo) {
-        velo.style.opacity = abre ? '1' : '0';
-        velo.style.visibility = abre ? 'visible' : 'hidden';
-        velo.style.pointerEvents = abre ? 'auto' : 'none';
-      }
-      boton.setAttribute('aria-expanded', abre ? 'true' : 'false');
-      var cabecera = document.querySelector('header');
-      if (cabecera) {
-        cabecera.style.backgroundColor = abre ? fondo : '';
-        cabecera.style.color = abre ? 'var(--foreground)' : '';
-      }
     };
-    pinta(false);
-    cajon.style.visibility = 'hidden';
+
     boton.addEventListener('click', function () { abierto = !abierto; pinta(abierto); });
     if (velo) velo.addEventListener('click', function () { abierto = false; pinta(false); });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && abierto) { abierto = false; pinta(false); }
+    });
     Array.prototype.forEach.call(cajon.querySelectorAll('button[aria-expanded]'), function (b) {
       b.addEventListener('click', function () {
         var lista = b.nextElementSibling;
@@ -3355,7 +3349,16 @@ body {
   // La barra se esconde al bajar y vuelve al subir, como en la web viva. No se
   // esconde con el cajon abierto: el cajon vive dentro del <header> y se iria
   // con el.
-  var cabecera = document.querySelector('header');
+  //
+  // CUIDADO con el translate de reposo: tiene que QUITARSE, no ponerse a cero.
+  // El cajon y su velo son position:fixed y viven dentro del <header>; en
+  // cuanto el <header> lleva un translate distinto de "none" pasa a ser su
+  // bloque contenedor, y entonces el cajon -top:var(--cabecera); bottom:0-
+  // se resuelve dentro de una caja de 62 px de alto y se queda en ALTURA CERO.
+  // Ese era el fallo que Alina veia como "se abre pero le falta el fondito
+  // blanco": bastaba con haber desplazado la pagina una vez. Un translate de
+  // '0 0' basta para romperlo, asi que aqui va cadena vacia, que es lo que
+  // hace el componente al soltar la clase.
   if (cabecera) {
     var retirada = false;
     var ultimoY = window.scrollY;
@@ -3374,7 +3377,7 @@ body {
       if (fuera === retirada) return;
       retirada = fuera;
       cabecera.style.transition = 'translate .3s ease-out, height .2s ease-out, background-color .2s ease-out';
-      cabecera.style.translate = fuera ? '0 -100%' : '0 0';
+      cabecera.style.translate = fuera ? '0 -100%' : '';
       cabecera.style.pointerEvents = fuera ? 'none' : '';
     };
     window.addEventListener('scroll', mira, { passive: true });
