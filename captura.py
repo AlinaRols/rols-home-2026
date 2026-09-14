@@ -55,7 +55,7 @@ page = re.sub(r'<link[^>]+rel="stylesheet"[^>]*>', "", page)
 cache = {}
 
 
-def pick(ss):
+def pick(ss, tope=1600):
     best, bw = None, -1
     for part in ihtml.unescape(ss).split(","):
         bits = part.strip().split(" ")
@@ -65,7 +65,7 @@ def pick(ss):
             w = int(bits[-1].rstrip("w"))
         except ValueError:
             continue
-        if bw < w <= 1600:
+        if bw < w <= tope:
             best, bw = bits[0], w
     return best
 
@@ -84,7 +84,15 @@ def fix(m):
     tag = m.group(0)
     ss = re.search(r'srcSet="([^"]+)"', tag) or re.search(r'srcset="([^"]+)"', tag)
     sr = re.search(r'\ssrc="([^"]+)"', tag)
-    url = pick(ss.group(1)) if ss else (ihtml.unescape(sr.group(1)) if sr else None)
+    # Las fotos a sangre -sizes="100vw", que hoy solo es el hero- se llevan el
+    # tope alto. Con el de 1600 el hero caia en el escalon de 1200 de Next -no
+    # hay nada entre 1200 y 1920- y en una ventana de 1920 con retina se
+    # estiraba de 1200 a 3840: por eso Alina lo veia "muy mal". No se sube el
+    # tope de todas porque son 18 imagenes y la pagina ya pesa 5,6 MB. Al
+    # hero le cuesta 260 KB mas y a cambio se ve nitido en una retina de
+    # 1920, que es donde lo mira Alina.
+    tope = 3840 if 'sizes="100vw"' in tag else 1600
+    url = pick(ss.group(1), tope) if ss else (ihtml.unescape(sr.group(1)) if sr else None)
     if not url:
         return tag
     dato = mete(url)
