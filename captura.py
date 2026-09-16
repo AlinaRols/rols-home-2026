@@ -63,6 +63,30 @@ for href in re.findall(r'<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"', page):
     css.append(re.sub(r'url\(([^)]+)\)', inline, t))
 page = re.sub(r'<link[^>]+rel="stylesheet"[^>]*>', "", page)
 
+# Las fuentes: next/font no las declara en :root, sino en una clase con hash
+# que va puesta en el <html> -"montserrat_xxx__variable league_spartan_yyy".
+# Y esta captura sale como fragmento, sin <html> ni <body>, asi que esa clase
+# se pierde: las variables --font-* quedan sin definir, font-family no resuelve
+# y TODA la pagina publicada salia en la tipografia del sistema mientras en
+# localhost se veia con League Spartan y Montserrat.
+#
+# Los woff2 si estaban embebidos desde hace dias; lo que faltaba era quien los
+# llamara. Se rescatan los valores del propio CSS y se vuelven a declarar en
+# :root, que no depende de ninguna clase.
+hoja = "\n".join(css)
+declaraciones = []
+for var in ("--font-montserrat", "--font-league-spartan"):
+    m = re.search(re.escape(var) + r"\s*:\s*([^;}]+)", hoja)
+    if m:
+        declaraciones.append("%s:%s" % (var, m.group(1).strip()))
+    else:
+        print("AVISO: no se encuentra", var, "en el CSS; la pagina saldra con la fuente del sistema")
+if declaraciones:
+    # El body tambien: en la pagina real lleva la clase font-sans, y el body
+    # del envoltorio no la tiene, asi que todo lo que hereda se quedaba fuera.
+    css.append(":root{%s}\nbody{font-family:var(--font-sans)}" % ";".join(declaraciones))
+
+
 # Cada <img> se queda con una sola fuente, embebida.
 cache = {}
 
