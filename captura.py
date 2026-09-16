@@ -56,18 +56,40 @@ cache = {}
 
 
 def pick(ss, tope=1600):
-    best, bw = None, -1
+    """Elige una fuente del srcset.
+
+    Hay dos clases de srcset y hay que entender las dos. Cuando la imagen
+    lleva sizes, Next escribe anchos -"...640w, ...1200w"- y nos quedamos con
+    el mayor que no pase del tope. Cuando NO lleva sizes, escribe densidades
+    -"...640 1x, ...1200 2x"- y entonces nos quedamos con la mas densa.
+
+    Solo entendia los anchos, y las imagenes sin sizes -los logos de los
+    estudios- se quedaban sin candidato: fix() devolvia la etiqueta intacta,
+    apuntando a /_next/image, que en una pagina estatica no existe. Alina los
+    vio como iconos de imagen rota.
+    """
+    anchos, densidades = [], []
     for part in ihtml.unescape(ss).split(","):
         bits = part.strip().split(" ")
         if len(bits) < 2:
             continue
-        try:
-            w = int(bits[-1].rstrip("w"))
-        except ValueError:
-            continue
-        if bw < w <= tope:
-            best, bw = bits[0], w
-    return best
+        marca = bits[-1]
+        if marca.endswith("w"):
+            try:
+                anchos.append((int(marca[:-1]), bits[0]))
+            except ValueError:
+                continue
+        elif marca.endswith("x"):
+            try:
+                densidades.append((float(marca[:-1]), bits[0]))
+            except ValueError:
+                continue
+    cabidos = [u for w, u in sorted(anchos) if w <= tope]
+    if cabidos:
+        return cabidos[-1]
+    if densidades:
+        return sorted(densidades)[-1][1]
+    return None
 
 
 def mete(url, mime=None):
@@ -310,4 +332,13 @@ page = re.sub(r'<!DOCTYPE[^>]*>', "", page, flags=re.I)
 page = re.sub(r'</?(?:html|head|body)(?=[\s>])[^>]*>', "", page, flags=re.I)
 page = "<style>%s</style>%s%s" % ("\n".join(css), page.strip(), reconecta)
 DEST.write_text(page)
+
+# Red de seguridad: en una pagina estatica no puede quedar nada apuntando al
+# optimizador de Next, porque ahi no hay servidor que responda. Si queda,
+# sale roto en pantalla -paso con los logos de los estudios-, asi que mejor
+# enterarse aqui que en el navegador de Alina.
+sueltas = page.count("/_next/image")
+if sueltas:
+    print("AVISO:", sueltas, "imagenes se han quedado sin embeber (apuntan a /_next/image)")
+
 print("imagenes:", len(cache), "| tamano:", len(page) // 1024, "KB")
