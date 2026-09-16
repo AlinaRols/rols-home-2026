@@ -114,9 +114,15 @@ def video(m):
     # El video NO se embebe como data: URI. Safari no puede reproducir video en
     # data: -necesita peticiones por rango, que un data: no admite-, asi que se
     # apunta al fichero suelto que va junto al HTML.
+    # Cada video apunta al fichero que va a su lado. Se coge la version de
+    # movil -que es la ligera- deduciendola del nombre: hero-X-web.mp4 ->
+    # hero-X-movil.mp4. Antes estaba escrito a pelo "hero-fabrica-movil.mp4",
+    # y en cuanto la home tuvo dos videos distintos el del hero apuntaba al de
+    # la fabrica.
     src = re.search(r'<video[^>]*\ssrc="([^"]+)"', tag)
     if src and not src.group(1).startswith("data:"):
-        tag = tag.replace(src.group(1), "hero-fabrica-movil.mp4", 1)
+        suelto = src.group(1).rsplit("/", 1)[-1].replace("-web.mp4", "-movil.mp4")
+        tag = tag.replace(src.group(1), suelto, 1)
     return tag
 
 
