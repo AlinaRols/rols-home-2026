@@ -21,8 +21,20 @@ DEST = pathlib.Path(sys.argv[1])
 DESTINO = sys.argv[2] if len(sys.argv) > 2 else "publico"
 
 
+# El Accept importa: el optimizador de Next negocia el formato, y sin esta
+# cabecera devuelve JPEG. El JPEG no tiene transparencia, asi que los logos
+# de los estudios -PNG con alfa- salian con el fondo en NEGRO en la pagina
+# publicada mientras en localhost se veian bien. Pidiendo webp conserva el
+# canal alfa. No se pide avif a proposito: asi se sabe que lo que llega es
+# webp o el original.
+CABECERAS = {"Accept": "image/webp,image/png,image/jpeg,*/*"}
+
+
 def get(u):
-    return urllib.request.urlopen(BASE + u if u.startswith("/") else u, timeout=180).read()
+    url = BASE + u if u.startswith("/") else u
+    return urllib.request.urlopen(
+        urllib.request.Request(url, headers=CABECERAS), timeout=180
+    ).read()
 
 
 page = get("/").decode()
@@ -92,12 +104,25 @@ def pick(ss, tope=1600):
     return None
 
 
+def tipo(blob):
+    """El tipo real, leido de los primeros bytes y no adivinado."""
+    if blob[:4] == b"RIFF" and blob[8:12] == b"WEBP":
+        return "image/webp"
+    if blob[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if blob[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if blob[4:12] in (b"ftypavif", b"ftypavis"):
+        return "image/avif"
+    return "application/octet-stream"
+
+
 def mete(url, mime=None):
     if url in cache:
         return cache[url]
     blob = get(url)
     if mime is None:
-        mime = "image/webp" if b"WEBP" in blob[:20] else "image/jpeg"
+        mime = tipo(blob)
     cache[url] = f"data:{mime};base64,{base64.b64encode(blob).decode()}"
     return cache[url]
 
