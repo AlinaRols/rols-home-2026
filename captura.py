@@ -185,15 +185,26 @@ def video(m):
     # El video NO se embebe como data: URI. Safari no puede reproducir video en
     # data: -necesita peticiones por rango, que un data: no admite-, asi que se
     # apunta al fichero suelto que va junto al HTML.
-    # Cada video apunta al fichero que va a su lado. Se coge la version de
-    # movil -que es la ligera- deduciendola del nombre: hero-X-web.mp4 ->
-    # hero-X-movil.mp4. Antes estaba escrito a pelo "hero-fabrica-movil.mp4",
-    # y en cuanto la home tuvo dos videos distintos el del hero apuntaba al de
-    # la fabrica.
+    # Cada video apunta al fichero que va a su lado, deducido del nombre:
+    # X-web.mp4 -> X-captura.mp4, y si no existe, X-movil.mp4. Antes estaba
+    # escrito a pelo "hero-fabrica-movil.mp4", y en cuanto la home tuvo dos
+    # videos distintos el del hero apuntaba al de la fabrica.
+    #
+    # Se prefiere la copia "captura" porque la de movil ya no vale aqui: desde
+    # el 18 sept 2026 la version de telefono del video de fabrica va recortada
+    # en vertical -que es lo que se ve en un movil de verdad-, y en el enlace,
+    # que se mira en el ordenador, saldria una tira central estirada. La copia
+    # "captura" es el mismo plano apaisado a 720p, ligera y con el encuadre
+    # bueno.
     src = re.search(r'<video[^>]*\ssrc="([^"]+)"', tag)
     if src and not src.group(1).startswith("data:"):
-        suelto = src.group(1).rsplit("/", 1)[-1].replace("-web.mp4", "-movil.mp4")
-        tag = tag.replace(src.group(1), suelto, 1)
+        nombre = src.group(1).rsplit("/", 1)[-1]
+        for sufijo in ("-captura.mp4", "-movil.mp4"):
+            candidato = nombre.replace("-web.mp4", sufijo)
+            if candidato != nombre and (DEST.parent / candidato).exists():
+                nombre = candidato
+                break
+        tag = tag.replace(src.group(1), nombre, 1)
     return tag
 
 
