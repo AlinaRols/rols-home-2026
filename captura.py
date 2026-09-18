@@ -138,6 +138,12 @@ def tipo(blob):
         return "image/png"
     if blob[4:12] in (b"ftypavif", b"ftypavis"):
         return "image/avif"
+    # Los SVG son texto: empiezan por "<svg" o por la declaracion XML. Sin este
+    # caso salian como application/octet-stream y el navegador no los pintaba
+    # -era lo que dejaba en blanco los iconos de pago del pie-.
+    cabeza = blob[:200].lstrip()
+    if cabeza[:4] == b"<svg" or (cabeza[:5] == b"<?xml" and b"<svg" in blob[:600]):
+        return "image/svg+xml"
     return "application/octet-stream"
 
 
