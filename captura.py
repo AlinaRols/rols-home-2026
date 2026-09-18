@@ -287,69 +287,66 @@ reconecta = """
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
-  // Puntitos y pase automatico del carrusel de proyectos. En la web esto lo
-  // lleva React; aqui se reconstruye igual: cada 3 s pasa uno, se para con el
-  // raton encima, fuera de pantalla o con la pestana de fondo, y al pulsar un
-  // puntito vuelve a contar desde cero. El puntito encendido se marca con
-  // estilos en linea, que mandan sobre las clases y no hay que adivinarlas.
-  var puntos = Array.prototype.slice.call(
-    document.querySelectorAll('main button[aria-label^="Ir al proyecto"]'));
-  if (puntos.length) {
-    var fila = puntos[0].parentElement;
-    var carro = fila.previousElementSibling;
-    var bloque = fila.closest('section') || fila.parentElement;
-    var tinta = getComputedStyle(document.body).color;
+  // Todo esto va en su propia funcion: el guion comparte un solo ambito y
+  // mas abajo el cajon declara otro `pinta` y otro `reloj` con var, que
+  // pisaban a los de aqui -el reloj del carrusel acababa llamando a la
+  // funcion del cajon y no pasaba nada-.
+  (function () {
+    // Puntitos y pase automatico del carrusel de proyectos. En la web esto lo
+    // lleva React; aqui se reconstruye igual: los proyectos van apilados y solo
+    // cambia la opacidad -el fundido de 900 ms ya viene en las clases-, cada 3 s,
+    // parandose con el raton encima, fuera de pantalla o con la pestana de fondo.
+    // Se toca por estilos en linea, que mandan sobre las clases.
+    var puntos = Array.prototype.slice.call(
+      document.querySelectorAll('main button[aria-label^="Ir al proyecto"]'));
+    if (puntos.length) {
+      var fila = puntos[0].parentElement;
+      var lista = fila.previousElementSibling;
+      var diapos = Array.prototype.slice.call(lista.children);
+      var bloque = fila.closest('section') || fila.parentElement;
+      var tinta = getComputedStyle(document.body).color;
+      var cual = 0;
 
-    var marca = function () {
-      var i = Math.round(carro.scrollLeft / (carro.clientWidth || 1));
+      var pinta = function () {
+        diapos.forEach(function (d, j) {
+          d.style.opacity = j === cual ? '1' : '0';
+          d.style.pointerEvents = j === cual ? '' : 'none';
+        });
+        puntos.forEach(function (p, j) {
+          p.style.width = j === cual ? '24px' : '6px';
+          p.style.backgroundColor = j === cual ? tinta : 'rgba(51,58,60,.25)';
+        });
+      };
+
+      var reloj = null;
+      var cuenta = function () {
+        if (reloj) clearInterval(reloj);
+        reloj = setInterval(function () {
+          if (quieto || !aLaVista || document.hidden) return;
+          cual = (cual + 1) % diapos.length;
+          pinta();
+        }, 3000);
+      };
+
       puntos.forEach(function (p, j) {
-        p.style.width = j === i ? '24px' : '6px';
-        p.style.backgroundColor = j === i ? tinta : 'rgba(51,58,60,.25)';
+        p.addEventListener('click', function () { cual = j; pinta(); cuenta(); });
       });
-    };
 
-    var desliza = function (hasta, ms) {
-      var desde = carro.scrollLeft;
-      var t0 = performance.now();
-      (function paso(now) {
-        var t = Math.min(1, (now - t0) / ms);
-        carro.scrollLeft = desde + (hasta - desde) * (1 - Math.pow(1 - t, 3));
-        if (t < 1) requestAnimationFrame(paso);
-      })(t0);
-    };
+      var quieto = false;
+      var aLaVista = false;
+      bloque.addEventListener('pointerenter', function () { quieto = true; });
+      bloque.addEventListener('pointerleave', function () { quieto = false; });
+      if (window.IntersectionObserver) {
+        new IntersectionObserver(function (e) { aLaVista = e[0].isIntersecting; },
+          { threshold: 0.5 }).observe(bloque);
+      } else {
+        aLaVista = true;
+      }
 
-    puntos.forEach(function (p, j) {
-      p.addEventListener('click', function () {
-        desliza(j * carro.clientWidth, 520);
-        cuenta();
-      });
-    });
-    carro.addEventListener('scroll', marca, { passive: true });
-    marca();
-
-    var quieto = false;
-    var aLaVista = false;
-    bloque.addEventListener('pointerenter', function () { quieto = true; });
-    bloque.addEventListener('pointerleave', function () { quieto = false; });
-    if (window.IntersectionObserver) {
-      new IntersectionObserver(function (e) { aLaVista = e[0].isIntersecting; },
-        { threshold: 0.5 }).observe(bloque);
-    } else {
-      aLaVista = true;
+      pinta();
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) cuenta();
     }
-
-    var reloj = null;
-    var cuenta = function () {
-      if (reloj) clearInterval(reloj);
-      reloj = setInterval(function () {
-        if (quieto || !aLaVista || document.hidden) return;
-        var tope = carro.scrollWidth - carro.clientWidth;
-        var hasta = carro.scrollLeft >= tope - 2 ? 0 : carro.scrollLeft + carro.clientWidth;
-        desliza(Math.min(hasta, tope), 900);
-      }, 3000);
-    };
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) cuenta();
-  }
+  })();
 
   // Cajon lateral. No se inventa nada: se ponen y se quitan LAS MISMAS clases
   // que pone y quita React en site-header.tsx, que es la version que funciona.
