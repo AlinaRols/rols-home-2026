@@ -282,7 +282,7 @@ reconecta = """
   });
 
   // Puntitos y pase automatico del carrusel de proyectos. En la web esto lo
-  // lleva React; aqui se reconstruye igual: cada 7 s pasa uno, se para con el
+  // lleva React; aqui se reconstruye igual: cada 3 s pasa uno, se para con el
   // raton encima, fuera de pantalla o con la pestana de fondo, y al pulsar un
   // puntito vuelve a contar desde cero. El puntito encendido se marca con
   // estilos en linea, que mandan sobre las clases y no hay que adivinarlas.
@@ -339,8 +339,8 @@ reconecta = """
         if (quieto || !aLaVista || document.hidden) return;
         var tope = carro.scrollWidth - carro.clientWidth;
         var hasta = carro.scrollLeft >= tope - 2 ? 0 : carro.scrollLeft + carro.clientWidth;
-        desliza(Math.min(hasta, tope), hasta === 0 ? 900 : 1200);
-      }, 7000);
+        desliza(Math.min(hasta, tope), 900);
+      }, 3000);
     };
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) cuenta();
   }
