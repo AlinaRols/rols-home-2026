@@ -257,7 +257,12 @@ reconecta = """
   var tiras = Array.prototype.filter.call(document.querySelectorAll('main ul'), function (u) {
     return getComputedStyle(u).overflowX === 'auto';
   });
-  var botones = Array.prototype.slice.call(document.querySelectorAll('main button[aria-label]'));
+  // Solo las flechas: los puntitos del carrusel de proyectos tambien son
+  // botones con etiqueta, y si entran aqui descuadran el emparejamiento por
+  // orden. Las flechas son las que llevan un svg dentro.
+  var botones = Array.prototype.filter.call(
+    document.querySelectorAll('main button[aria-label]'),
+    function (b) { return !!b.querySelector('svg'); });
   tiras.forEach(function (tira, i) {
     var par = botones.slice(i * 2, i * 2 + 2);
     if (par.length < 2) return;
@@ -275,6 +280,70 @@ reconecta = """
     par[0].addEventListener('click', function () { mueve(-1); });
     par[1].addEventListener('click', function () { mueve(1); });
   });
+
+  // Puntitos y pase automatico del carrusel de proyectos. En la web esto lo
+  // lleva React; aqui se reconstruye igual: cada 7 s pasa uno, se para con el
+  // raton encima, fuera de pantalla o con la pestana de fondo, y al pulsar un
+  // puntito vuelve a contar desde cero. El puntito encendido se marca con
+  // estilos en linea, que mandan sobre las clases y no hay que adivinarlas.
+  var puntos = Array.prototype.slice.call(
+    document.querySelectorAll('main button[aria-label^="Ir al proyecto"]'));
+  if (puntos.length) {
+    var fila = puntos[0].parentElement;
+    var carro = fila.previousElementSibling;
+    var bloque = fila.closest('section') || fila.parentElement;
+    var tinta = getComputedStyle(document.body).color;
+
+    var marca = function () {
+      var i = Math.round(carro.scrollLeft / (carro.clientWidth || 1));
+      puntos.forEach(function (p, j) {
+        p.style.width = j === i ? '24px' : '6px';
+        p.style.backgroundColor = j === i ? tinta : 'rgba(51,58,60,.25)';
+      });
+    };
+
+    var desliza = function (hasta, ms) {
+      var desde = carro.scrollLeft;
+      var t0 = performance.now();
+      (function paso(now) {
+        var t = Math.min(1, (now - t0) / ms);
+        carro.scrollLeft = desde + (hasta - desde) * (1 - Math.pow(1 - t, 3));
+        if (t < 1) requestAnimationFrame(paso);
+      })(t0);
+    };
+
+    puntos.forEach(function (p, j) {
+      p.addEventListener('click', function () {
+        desliza(j * carro.clientWidth, 520);
+        cuenta();
+      });
+    });
+    carro.addEventListener('scroll', marca, { passive: true });
+    marca();
+
+    var quieto = false;
+    var aLaVista = false;
+    bloque.addEventListener('pointerenter', function () { quieto = true; });
+    bloque.addEventListener('pointerleave', function () { quieto = false; });
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (e) { aLaVista = e[0].isIntersecting; },
+        { threshold: 0.5 }).observe(bloque);
+    } else {
+      aLaVista = true;
+    }
+
+    var reloj = null;
+    var cuenta = function () {
+      if (reloj) clearInterval(reloj);
+      reloj = setInterval(function () {
+        if (quieto || !aLaVista || document.hidden) return;
+        var tope = carro.scrollWidth - carro.clientWidth;
+        var hasta = carro.scrollLeft >= tope - 2 ? 0 : carro.scrollLeft + carro.clientWidth;
+        desliza(Math.min(hasta, tope), hasta === 0 ? 900 : 1200);
+      }, 7000);
+    };
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) cuenta();
+  }
 
   // Cajon lateral. No se inventa nada: se ponen y se quitan LAS MISMAS clases
   // que pone y quita React en site-header.tsx, que es la version que funciona.
