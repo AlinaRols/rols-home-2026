@@ -189,6 +189,55 @@ body{font-family:var(--font-sans)}</style><meta charSet="utf-8"/><meta name="vie
     });
   })();
 
+  // Pequeno vaiven del carrusel de best sellers en movil. Sirve como pista
+  // de que la tira continua hacia la derecha: asoma la siguiente ficha y
+  // vuelve a su sitio una sola vez cuando el bloque entra en pantalla.
+  (function () {
+    var tira = document.querySelector('main ul.overflow-x-auto');
+    if (!tira || !window.matchMedia('(max-width: 767px)').matches ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var frame = 0;
+    var reloj = 0;
+    var empezado = false;
+    var cancela = function () {
+      clearTimeout(reloj);
+      cancelAnimationFrame(frame);
+    };
+    tira.addEventListener('pointerdown', cancela, { once: true });
+
+    var arranca = function () {
+      if (empezado) return;
+      empezado = true;
+      reloj = setTimeout(function () {
+        if (tira.scrollLeft > 2) return;
+        var desde = tira.scrollLeft;
+        var distancia = Math.min(26, tira.scrollWidth - tira.clientWidth);
+        var inicio = performance.now();
+        var duracion = 950;
+        var paso = function (ahora) {
+          var t = Math.min(1, (ahora - inicio) / duracion);
+          var vaiven = Math.pow(Math.sin(Math.PI * t), 2);
+          tira.scrollLeft = desde + distancia * vaiven;
+          if (t < 1) frame = requestAnimationFrame(paso);
+        };
+        frame = requestAnimationFrame(paso);
+      }, 320);
+    };
+
+    if (window.IntersectionObserver) {
+      var observador = new IntersectionObserver(function (entradas) {
+        if (entradas[0].isIntersecting && entradas[0].intersectionRatio >= 0.45) {
+          observador.disconnect();
+          arranca();
+        }
+      }, { threshold: 0.45 });
+      observador.observe(tira);
+    } else {
+      arranca();
+    }
+  })();
+
   // Todo esto va en su propia funcion: el guion comparte un solo ambito y
   // mas abajo el cajon declara otro `pinta` y otro `reloj` con var, que
   // pisaban a los de aqui -el reloj del carrusel acababa llamando a la
