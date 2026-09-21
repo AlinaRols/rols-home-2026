@@ -436,6 +436,33 @@ reconecta = """
         p.addEventListener('click', function () { cual = j; pinta(); cuenta(); });
       });
 
+      // En movil el carrusel sigue pasando solo, pero tambien responde al
+      // dedo. El gesto horizontal cambia un proyecto y `pan-y` deja intacto
+      // el desplazamiento vertical de la pagina.
+      lista.style.touchAction = 'pan-y';
+      var gestoProyecto = null;
+      lista.addEventListener('touchstart', function (event) {
+        var toque = event.touches[0];
+        if (!toque) return;
+        gestoProyecto = { x: toque.clientX, y: toque.clientY };
+      }, { passive: true });
+      lista.addEventListener('touchend', function (event) {
+        var inicio = gestoProyecto;
+        var toque = event.changedTouches[0];
+        gestoProyecto = null;
+        if (!inicio || !toque) return;
+        var dx = toque.clientX - inicio.x;
+        var dy = toque.clientY - inicio.y;
+        if (Math.abs(dx) < 36 || Math.abs(dx) <= Math.abs(dy) * 1.2) return;
+        event.preventDefault();
+        cual = (cual + (dx < 0 ? 1 : -1) + diapos.length) % diapos.length;
+        pinta();
+        cuenta();
+      }, { passive: false });
+      lista.addEventListener('touchcancel', function () {
+        gestoProyecto = null;
+      }, { passive: true });
+
       var quieto = false;
       var aLaVista = false;
       bloque.addEventListener('pointerenter', function () { quieto = true; });
