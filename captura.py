@@ -287,9 +287,10 @@ reconecta = """
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
-  // En movil no hay hover: el boton de cada ficha alterna entre el packshot
-  // y su foto de ambiente. La captura de Pages no hidrata React, asi que se
-  // replica aqui la misma interaccion de home-collections.tsx.
+  // En movil no hay hover: los puntos y un gesto corto sobre la imagen
+  // alternan entre el packshot y su foto de ambiente. Un gesto largo o rapido
+  // queda libre para desplazar la tira de productos. La captura de Pages no
+  // hidrata React, asi que se replica aqui la interaccion de la aplicacion.
   (function () {
     var tarjetas = Array.prototype.slice.call(
       document.querySelectorAll('[data-mobile-image-card]'));
@@ -331,6 +332,7 @@ reconecta = """
     tarjetas.forEach(function (tarjeta) {
       var producto = tarjeta.querySelector('[data-mobile-product-toggle]');
       var boton = tarjeta.querySelector('[data-mobile-ambient-toggle]');
+      var superficie = tarjeta.querySelector('[data-mobile-swipe-surface]');
       if (!producto || !boton) return;
       producto.addEventListener('click', function () {
         pintaTarjeta(tarjeta, false);
@@ -340,6 +342,52 @@ reconecta = """
           pintaTarjeta(otra, otra === tarjeta);
         });
       });
+
+      if (superficie) {
+        var gesto = null;
+        superficie.addEventListener('touchstart', function (event) {
+          var toque = event.touches[0];
+          var tira = superficie.closest('ul');
+          if (!toque || !tira) return;
+          gesto = {
+            x: toque.clientX,
+            y: toque.clientY,
+            at: performance.now(),
+            maxDistance: 0,
+            scrollLeft: tira.scrollLeft
+          };
+        }, { passive: true });
+        superficie.addEventListener('touchmove', function (event) {
+          var toque = event.touches[0];
+          if (!gesto || !toque) return;
+          gesto.maxDistance = Math.max(gesto.maxDistance, Math.abs(toque.clientX - gesto.x));
+        }, { passive: true });
+        superficie.addEventListener('touchend', function (event) {
+          var inicio = gesto;
+          var toque = event.changedTouches[0];
+          var tira = superficie.closest('ul');
+          gesto = null;
+          if (!inicio || !toque || !tira) return;
+
+          var dx = toque.clientX - inicio.x;
+          var dy = toque.clientY - inicio.y;
+          var distancia = Math.abs(dx);
+          var recorrido = Math.max(distancia, inicio.maxDistance);
+          var velocidad = distancia / Math.max(performance.now() - inicio.at, 1);
+          if (distancia < 18 || recorrido > 72 || velocidad > 0.65 ||
+              distancia <= Math.abs(dy) * 1.25) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+          tira.scrollLeft = inicio.scrollLeft;
+          tarjetas.forEach(function (otra) {
+            pintaTarjeta(otra, dx < 0 && otra === tarjeta);
+          });
+        }, { passive: false });
+        superficie.addEventListener('touchcancel', function () {
+          gesto = null;
+        }, { passive: true });
+      }
     });
   })();
 
