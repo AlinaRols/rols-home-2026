@@ -304,7 +304,7 @@ reconecta = """
       var lista = fila.previousElementSibling;
       var diapos = Array.prototype.slice.call(lista.children);
       var bloque = fila.closest('section') || fila.parentElement;
-      var tinta = getComputedStyle(document.body).color;
+      var beige = getComputedStyle(document.querySelector('header a.bg-beige')).backgroundColor;
       var cual = 0;
 
       var pinta = function () {
@@ -314,7 +314,7 @@ reconecta = """
         });
         puntos.forEach(function (p, j) {
           p.style.width = j === cual ? '24px' : '6px';
-          p.style.backgroundColor = j === cual ? tinta : 'rgba(51,58,60,.25)';
+          p.style.backgroundColor = beige;
         });
       };
 
