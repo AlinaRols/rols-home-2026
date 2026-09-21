@@ -396,29 +396,23 @@ reconecta = """
   // pisaban a los de aqui -el reloj del carrusel acababa llamando a la
   // funcion del cajon y no pasaba nada-.
   (function () {
-    // Puntitos y pase automatico del carrusel de proyectos. En la web esto lo
-    // lleva React; aqui se reconstruye igual: los proyectos van apilados y solo
-    // cambia la opacidad -el fundido de 900 ms ya viene en las clases-, cada 3 s,
-    // parandose con el raton encima, fuera de pantalla o con la pestana de fondo.
-    // Se toca por estilos en linea, que mandan sobre las clases.
-    var puntos = Array.prototype.slice.call(
-      document.querySelectorAll('main button[aria-label^="Ir al proyecto"]'));
-    if (puntos.length) {
-      var fila = puntos[0].parentElement;
-      var lista = fila.previousElementSibling;
+    // Flecha sutil, gesto tactil y pase automatico del carrusel de proyectos.
+    // En la web esto lo lleva React; aqui se reconstruye igual: los proyectos
+    // van apilados y solo cambia la opacidad -el fundido de 900 ms ya viene en
+    // las clases-, cada 3 s, parandose con el raton encima, fuera de pantalla
+    // o con la pestana de fondo.
+    var lista = document.querySelector('[data-project-carousel]');
+    if (lista) {
+      var siguiente = lista.parentElement.querySelector('[data-project-next]');
       var diapos = Array.prototype.slice.call(lista.children);
-      var bloque = fila.closest('section') || fila.parentElement;
-      var beige = getComputedStyle(document.querySelector('header a.bg-beige')).backgroundColor;
+      var bloque = lista.closest('section') || lista.parentElement;
       var cual = 0;
 
       var pinta = function () {
         diapos.forEach(function (d, j) {
           d.style.opacity = j === cual ? '1' : '0';
           d.style.pointerEvents = j === cual ? '' : 'none';
-        });
-        puntos.forEach(function (p, j) {
-          p.style.width = j === cual ? '24px' : '6px';
-          p.style.backgroundColor = beige;
+          d.setAttribute('aria-hidden', j === cual ? 'false' : 'true');
         });
       };
 
@@ -432,9 +426,13 @@ reconecta = """
         }, 3000);
       };
 
-      puntos.forEach(function (p, j) {
-        p.addEventListener('click', function () { cual = j; pinta(); cuenta(); });
-      });
+      if (siguiente) {
+        siguiente.addEventListener('click', function () {
+          cual = (cual + 1) % diapos.length;
+          pinta();
+          cuenta();
+        });
+      }
 
       // En movil el carrusel sigue pasando solo, pero tambien responde al
       // dedo. El gesto horizontal cambia un proyecto y `pan-y` deja intacto
