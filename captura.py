@@ -287,7 +287,7 @@ reconecta = """
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
-  // En movil no hay hover: los puntos y un gesto corto sobre la imagen
+  // En movil no hay hover: la flecha sutil y un gesto corto sobre la imagen
   // alternan entre el packshot y su foto de ambiente. Un gesto largo o rapido
   // queda libre para desplazar la tira de productos. La captura de Pages no
   // hidrata React, asi que se replica aqui la interaccion de la aplicacion.
@@ -296,13 +296,12 @@ reconecta = """
       document.querySelectorAll('[data-mobile-image-card]'));
 
     var pintaTarjeta = function (tarjeta, activa) {
-      var producto = tarjeta.querySelector('[data-mobile-product-toggle]');
-      var boton = tarjeta.querySelector('[data-mobile-ambient-toggle]');
+      var boton = tarjeta.querySelector('[data-mobile-image-toggle]');
       var packshot = tarjeta.querySelector('[data-mobile-packshot]');
       var ambiente = tarjeta.querySelector('[data-mobile-ambient]');
       var elegir = tarjeta.querySelector('[data-mobile-choose]');
       var editions = tarjeta.querySelector('[data-mobile-editions]');
-      if (!producto || !boton || !packshot || !ambiente || !elegir) return;
+      if (!boton || !packshot || !ambiente || !elegir) return;
 
       packshot.classList.toggle('opacity-0', activa);
       packshot.classList.toggle('opacity-100', !activa);
@@ -317,29 +316,20 @@ reconecta = """
         editions.classList.toggle('opacity-100', !activa);
       }
 
-      producto.setAttribute('aria-pressed', activa ? 'false' : 'true');
       boton.setAttribute('aria-pressed', activa ? 'true' : 'false');
-      producto.classList.toggle('w-6', !activa);
-      producto.classList.toggle('opacity-100', !activa);
-      producto.classList.toggle('w-1.5', activa);
-      producto.classList.toggle('opacity-45', activa);
-      boton.classList.toggle('w-6', activa);
-      boton.classList.toggle('opacity-100', activa);
-      boton.classList.toggle('w-1.5', !activa);
-      boton.classList.toggle('opacity-45', !activa);
+      boton.setAttribute('aria-label', activa ? boton.dataset.showProduct : boton.dataset.showAmbient);
+      var icono = boton.querySelector('svg');
+      if (icono) icono.classList.toggle('rotate-180', activa);
     };
 
     tarjetas.forEach(function (tarjeta) {
-      var producto = tarjeta.querySelector('[data-mobile-product-toggle]');
-      var boton = tarjeta.querySelector('[data-mobile-ambient-toggle]');
+      var boton = tarjeta.querySelector('[data-mobile-image-toggle]');
       var superficie = tarjeta.querySelector('[data-mobile-swipe-surface]');
-      if (!producto || !boton) return;
-      producto.addEventListener('click', function () {
-        pintaTarjeta(tarjeta, false);
-      });
+      if (!boton) return;
       boton.addEventListener('click', function () {
+        var activa = boton.getAttribute('aria-pressed') !== 'true';
         tarjetas.forEach(function (otra) {
-          pintaTarjeta(otra, otra === tarjeta);
+          pintaTarjeta(otra, activa && otra === tarjeta);
         });
       });
 
@@ -396,16 +386,18 @@ reconecta = """
   // pisaban a los de aqui -el reloj del carrusel acababa llamando a la
   // funcion del cajon y no pasaba nada-.
   (function () {
-    // Flecha sutil, gesto tactil y pase automatico del carrusel de proyectos.
-    // En la web esto lo lleva React; aqui se reconstruye igual: los proyectos
-    // van apilados y solo cambia la opacidad -el fundido de 900 ms ya viene en
-    // las clases-, cada 3 s, parandose con el raton encima, fuera de pantalla
-    // o con la pestana de fondo.
-    var lista = document.querySelector('[data-project-carousel]');
-    if (lista) {
-      var siguiente = lista.parentElement.querySelector('[data-project-next]');
+    // Puntitos, gesto tactil y pase automatico del carrusel de proyectos. En
+    // la web esto lo lleva React; aqui se reconstruye igual: los proyectos van
+    // apilados y solo cambia la opacidad, cada 3 s, parandose con el raton
+    // encima, fuera de pantalla o con la pestana de fondo.
+    var puntos = Array.prototype.slice.call(
+      document.querySelectorAll('main button[aria-label^="Ir al proyecto"]'));
+    if (puntos.length) {
+      var fila = puntos[0].parentElement;
+      var lista = fila.previousElementSibling;
       var diapos = Array.prototype.slice.call(lista.children);
-      var bloque = lista.closest('section') || lista.parentElement;
+      var bloque = fila.closest('section') || fila.parentElement;
+      var beige = getComputedStyle(document.querySelector('header a.bg-beige')).backgroundColor;
       var cual = 0;
 
       var pinta = function () {
@@ -413,6 +405,12 @@ reconecta = """
           d.style.opacity = j === cual ? '1' : '0';
           d.style.pointerEvents = j === cual ? '' : 'none';
           d.setAttribute('aria-hidden', j === cual ? 'false' : 'true');
+        });
+        puntos.forEach(function (p, j) {
+          p.style.width = j === cual ? '24px' : '6px';
+          p.style.backgroundColor = beige;
+          if (j === cual) p.setAttribute('aria-current', 'true');
+          else p.removeAttribute('aria-current');
         });
       };
 
@@ -426,13 +424,9 @@ reconecta = """
         }, 3000);
       };
 
-      if (siguiente) {
-        siguiente.addEventListener('click', function () {
-          cual = (cual + 1) % diapos.length;
-          pinta();
-          cuenta();
-        });
-      }
+      puntos.forEach(function (p, j) {
+        p.addEventListener('click', function () { cual = j; pinta(); cuenta(); });
+      });
 
       // En movil el carrusel sigue pasando solo, pero tambien responde al
       // dedo. El gesto horizontal cambia un proyecto y `pan-y` deja intacto
