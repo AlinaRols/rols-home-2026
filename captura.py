@@ -287,6 +287,53 @@ reconecta = """
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
+  // En movil no hay hover: el boton de cada ficha alterna entre el packshot
+  // y su foto de ambiente. La captura de Pages no hidrata React, asi que se
+  // replica aqui la misma interaccion de home-collections.tsx.
+  (function () {
+    var tarjetas = Array.prototype.slice.call(
+      document.querySelectorAll('[data-mobile-image-card]'));
+
+    var pintaTarjeta = function (tarjeta, activa) {
+      var boton = tarjeta.querySelector('[data-mobile-toggle]');
+      var packshot = tarjeta.querySelector('[data-mobile-packshot]');
+      var ambiente = tarjeta.querySelector('[data-mobile-ambient]');
+      var elegir = tarjeta.querySelector('[data-mobile-choose]');
+      var editions = tarjeta.querySelector('[data-mobile-editions]');
+      if (!boton || !packshot || !ambiente || !elegir) return;
+
+      packshot.classList.toggle('opacity-0', activa);
+      packshot.classList.toggle('opacity-100', !activa);
+      ambiente.classList.toggle('opacity-100', activa);
+      ambiente.classList.toggle('opacity-0', !activa);
+      elegir.classList.toggle('translate-y-0', activa);
+      elegir.classList.toggle('opacity-100', activa);
+      elegir.classList.toggle('translate-y-1.5', !activa);
+      elegir.classList.toggle('opacity-0', !activa);
+      if (editions) {
+        editions.classList.toggle('opacity-0', activa);
+        editions.classList.toggle('opacity-100', !activa);
+      }
+
+      boton.setAttribute('aria-pressed', activa ? 'true' : 'false');
+      var etiqueta = activa ? boton.dataset.showProduct : boton.dataset.showAmbient;
+      boton.setAttribute('aria-label', etiqueta);
+      var texto = boton.querySelector('[data-mobile-toggle-label]');
+      if (texto) texto.textContent = etiqueta;
+    };
+
+    tarjetas.forEach(function (tarjeta) {
+      var boton = tarjeta.querySelector('[data-mobile-toggle]');
+      if (!boton) return;
+      boton.addEventListener('click', function () {
+        var activa = boton.getAttribute('aria-pressed') !== 'true';
+        tarjetas.forEach(function (otra) {
+          pintaTarjeta(otra, otra === tarjeta && activa);
+        });
+      });
+    });
+  })();
+
   // Todo esto va en su propia funcion: el guion comparte un solo ambito y
   // mas abajo el cajon declara otro `pinta` y otro `reloj` con var, que
   // pisaban a los de aqui -el reloj del carrusel acababa llamando a la
