@@ -295,12 +295,13 @@ reconecta = """
       document.querySelectorAll('[data-mobile-image-card]'));
 
     var pintaTarjeta = function (tarjeta, activa) {
-      var boton = tarjeta.querySelector('[data-mobile-toggle]');
+      var producto = tarjeta.querySelector('[data-mobile-product-toggle]');
+      var boton = tarjeta.querySelector('[data-mobile-ambient-toggle]');
       var packshot = tarjeta.querySelector('[data-mobile-packshot]');
       var ambiente = tarjeta.querySelector('[data-mobile-ambient]');
       var elegir = tarjeta.querySelector('[data-mobile-choose]');
       var editions = tarjeta.querySelector('[data-mobile-editions]');
-      if (!boton || !packshot || !ambiente || !elegir) return;
+      if (!producto || !boton || !packshot || !ambiente || !elegir) return;
 
       packshot.classList.toggle('opacity-0', activa);
       packshot.classList.toggle('opacity-100', !activa);
@@ -315,20 +316,28 @@ reconecta = """
         editions.classList.toggle('opacity-100', !activa);
       }
 
+      producto.setAttribute('aria-pressed', activa ? 'false' : 'true');
       boton.setAttribute('aria-pressed', activa ? 'true' : 'false');
-      var etiqueta = activa ? boton.dataset.showProduct : boton.dataset.showAmbient;
-      boton.setAttribute('aria-label', etiqueta);
-      var texto = boton.querySelector('[data-mobile-toggle-label]');
-      if (texto) texto.textContent = etiqueta;
+      producto.classList.toggle('w-6', !activa);
+      producto.classList.toggle('opacity-100', !activa);
+      producto.classList.toggle('w-1.5', activa);
+      producto.classList.toggle('opacity-45', activa);
+      boton.classList.toggle('w-6', activa);
+      boton.classList.toggle('opacity-100', activa);
+      boton.classList.toggle('w-1.5', !activa);
+      boton.classList.toggle('opacity-45', !activa);
     };
 
     tarjetas.forEach(function (tarjeta) {
-      var boton = tarjeta.querySelector('[data-mobile-toggle]');
-      if (!boton) return;
+      var producto = tarjeta.querySelector('[data-mobile-product-toggle]');
+      var boton = tarjeta.querySelector('[data-mobile-ambient-toggle]');
+      if (!producto || !boton) return;
+      producto.addEventListener('click', function () {
+        pintaTarjeta(tarjeta, false);
+      });
       boton.addEventListener('click', function () {
-        var activa = boton.getAttribute('aria-pressed') !== 'true';
         tarjetas.forEach(function (otra) {
-          pintaTarjeta(otra, otra === tarjeta && activa);
+          pintaTarjeta(otra, otra === tarjeta);
         });
       });
     });
