@@ -159,6 +159,22 @@ def mete(url, mime=None):
     return cache[url]
 
 
+def a_fichero(url):
+    """Baja una imagen a img/ junto al index.html de la ruta y da su nombre."""
+    carpeta = pathlib.Path(RUTA.strip("/") or ".") / "img"
+    carpeta.mkdir(parents=True, exist_ok=True)
+    nombre = re.sub(r"[^a-z0-9]+", "-", urllib.parse.unquote(url).lower().split("uploads/")[-1].split("&")[0]).strip("-") + ".webp"
+    if not (carpeta / nombre).exists():
+        (carpeta / nombre).write_bytes(get(url))
+    return "img/" + nombre
+
+
+def original(url):
+    """La direccion de origen de una imagen servida por /_next/image."""
+    q = urllib.parse.parse_qs(urllib.parse.urlparse(ihtml.unescape(url)).query).get("url")
+    return q[0] if q else None
+
+
 def fix(m):
     tag = m.group(0)
     ss = re.search(r'srcSet="([^"]+)"', tag) or re.search(r'srcset="([^"]+)"', tag)
@@ -189,15 +205,24 @@ def fix(m):
     # 14 MB, que tardaba en pintar nada. En Pages van como ficheros sueltos en
     # img/, junto al index.html de la ruta, y con carga diferida: se bajan
     # segun se llega a ellas.
-    if ficha and DESTINO == "publico":
-        carpeta = pathlib.Path(RUTA.strip("/") or ".") / "img"
-        carpeta.mkdir(parents=True, exist_ok=True)
-        nombre = re.sub(r"[^a-z0-9]+", "-", urllib.parse.unquote(url).lower().split("uploads/")[-1].split("&")[0]).strip("-") + ".webp"
-        if not (carpeta / nombre).exists():
-            (carpeta / nombre).write_bytes(get(url))
+    # Las fotos del deslizable de "Todas las alfombras" que no son la primera
+    # -la galeria de cada color, mas de mil- no se bajan: se dejan apuntando a
+    # rolscarpets.com, con carga diferida, y solo se piden al pasar con las
+    # flechas. Bajarlas todas llenaba el repo con decenas de megas.
+    lamina = re.search(r'data-rug-slide="(\d+)"', tag)
+    if lamina and lamina.group(1) != "0" and DESTINO == "publico":
+        fuera = original(url)
+        if fuera and fuera.startswith("http"):
+            tag = re.sub(r'\s(?:srcSet|srcset)="[^"]*"', "", tag)
+            tag = re.sub(r'\ssrc="[^"]*"', "", tag)
+            return tag[:-1].rstrip("/") + ' src="%s">' % ihtml.escape(fuera)
+    # Las bolitas de color van como ficheros pequeños y no embebidas: cada
+    # ficha lleva las de todo su modelo y embebidas se repetian cientos de
+    # veces en el HTML.
+    if (ficha or "data-rug-swatch-img" in tag) and DESTINO == "publico":
         tag = re.sub(r'\s(?:srcSet|srcset)="[^"]*"', "", tag)
         tag = re.sub(r'\ssrc="[^"]*"', "", tag)
-        return tag[:-1].rstrip("/") + ' src="img/%s">' % nombre
+        return tag[:-1].rstrip("/") + ' src="%s">' % a_fichero(url)
     dato = mete(url)
     tag = re.sub(r'\s(?:srcSet|srcset)="[^"]*"', "", tag)
     tag = re.sub(r'\ssrc="[^"]*"', "", tag)
@@ -206,6 +231,20 @@ def fix(m):
 
 
 page = re.sub(r'<img[^>]*>', fix, page)
+
+
+def laminas(m):
+    """data-slides de las bolitas: la primera foto de cada color (local) se
+    baja como la de la ficha; las de la galeria se quedan en rolscarpets.com."""
+    fotos = []
+    for f in ihtml.unescape(m.group(1)).split("|"):
+        if f.startswith("/") and DESTINO == "publico":
+            f = a_fichero("/_next/image?url=%s&w=828&q=75" % urllib.parse.quote(f, safe=""))
+        fotos.append(f)
+    return 'data-slides="%s"' % ihtml.escape("|".join(fotos))
+
+
+page = re.sub(r'data-slides="([^"]*)"', laminas, page)
 
 
 def video(m):
@@ -663,28 +702,56 @@ reconecta = """
     mira();
   }
 
-  // Fichas por modelo de "Todas las alfombras": las bolitas cambian la foto,
-  // el nombre del color, el precio y el enlace. Mismas clases que alterna
-  // rug-model-card.tsx; las fotos de todos los colores ya estan apiladas.
+  // Fichas de "Todas las alfombras": cada una pasa sus fotos con flechas (o
+  // el dedo) y una barrita marca la foto; las bolitas cambian de color, con
+  // el nombre, el precio, el enlace y las fotos de ese color (data-slides).
+  // Mismas clases que rug-model-card.tsx.
   (function () {
     Array.prototype.forEach.call(document.querySelectorAll('[data-rug-card]'), function (ficha) {
       var bolas = Array.prototype.slice.call(ficha.querySelectorAll('[data-rug-swatch]'));
-      // Cada ficha arranca en su color (la pagina saca una ficha por color).
+      var pista = ficha.querySelector('[data-rug-track]');
+      var barra = ficha.querySelector('[data-rug-bar]');
+      var ant = ficha.querySelector('[data-rug-prev]'), sig = ficha.querySelector('[data-rug-next]');
       var elegido = Math.max(0, bolas.findIndex(function (b) { return b.getAttribute('aria-pressed') === 'true'; }));
-      var pinta = function (i) {
-        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-img]'), function (im) {
-          var si = +im.getAttribute('data-rug-img') === i;
-          im.classList.toggle('opacity-100', si); im.classList.toggle('opacity-0', !si);
-        });
-        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-amb]'), function (im) {
-          im.classList.toggle('md:group-hover:opacity-100', +im.getAttribute('data-rug-amb') === i);
-        });
+      var mostrado = elegido, foto = 0;
+      var n = function () { return pista.children.length; };
+      var mueve = function () {
+        pista.style.transform = 'translateX(-' + foto * 100 + '%)';
+        barra.style.width = 100 / n() + '%';
+        barra.style.transform = 'translateX(' + foto * 100 + '%)';
+      };
+      var color = function (i) {
+        if (i === mostrado) return;
+        mostrado = i; foto = 0;
         var b = bolas[i];
+        var fotos = b.getAttribute('data-slides').split('|');
+        var alt = pista.firstElementChild ? pista.firstElementChild.getAttribute('alt') : '';
+        pista.style.transition = 'none';
+        pista.innerHTML = '';
+        fotos.forEach(function (src, k) {
+          var im = document.createElement('img');
+          im.src = src; im.alt = k === 0 ? (alt || '').replace(/\S+$/, '') + b.getAttribute('data-name') : '';
+          im.decoding = 'async'; if (k) im.loading = 'lazy';
+          im.className = pista.getAttribute(k === 0 ? 'data-first-class' : 'data-rest-class');
+          pista.appendChild(im);
+        });
+        mueve(); void pista.offsetWidth; pista.style.transition = '';
+        [ant, sig].forEach(function (f) { if (f) f.style.display = fotos.length > 1 ? '' : 'none'; });
         ficha.querySelector('[data-rug-color]').textContent = b.getAttribute('data-name');
         var pr = ficha.querySelector('[data-rug-price]');
         pr.textContent = pr.getAttribute('data-template').replace('{price}', b.getAttribute('data-price'));
-        ficha.querySelector('[data-rug-link]').setAttribute('href', b.getAttribute('data-href'));
+        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-link]'), function (a) { a.setAttribute('href', b.getAttribute('data-href')); });
       };
+      var pasa = function (d) { foto = (foto + d + n()) % n(); mueve(); };
+      if (ant) ant.addEventListener('click', function () { pasa(-1); });
+      if (sig) sig.addEventListener('click', function () { pasa(1); });
+      var caja = pista.parentElement, desde = null;
+      caja.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') desde = e.clientX; });
+      caja.addEventListener('pointerup', function (e) {
+        var d = desde; desde = null;
+        if (d === null || Math.abs(e.clientX - d) < 40) return;
+        pasa(e.clientX < d ? 1 : -1);
+      });
       var marca = function () {
         bolas.forEach(function (b, j) {
           var si = j === elegido;
@@ -695,12 +762,12 @@ reconecta = """
         });
       };
       bolas.forEach(function (b, j) {
-        b.addEventListener('mouseenter', function () { pinta(j); });
-        b.addEventListener('focus', function () { pinta(j); });
-        b.addEventListener('click', function () { elegido = j; marca(); pinta(j); });
+        b.addEventListener('mouseenter', function () { color(j); });
+        b.addEventListener('focus', function () { color(j); });
+        b.addEventListener('click', function () { elegido = j; marca(); color(j); });
       });
       var lista = bolas.length && bolas[0].closest('ul');
-      if (lista) lista.addEventListener('mouseleave', function () { pinta(elegido); });
+      if (lista) lista.addEventListener('mouseleave', function () { color(elegido); });
       var mas = ficha.querySelector('[data-rug-more]');
       if (mas) mas.addEventListener('click', function () {
         Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-swatch-item].hidden'), function (li) { li.classList.remove('hidden'); });
