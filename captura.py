@@ -171,9 +171,27 @@ def fix(m):
     # hero le cuesta 260 KB mas y a cambio se ve nitido en una retina de
     # 1920, que es donde lo mira Alina.
     tope = 3840 if 'sizes="100vw"' in tag else 1600
+    # Las fichas del archivo de colecciones van a un cuarto de pantalla -433 px
+    # en la de 1920-, asi que les basta 828, el doble para retina.
+    ficha = '(min-width: 1024px) 25vw' in tag
+    if ficha:
+        tope = 828
     url = pick(ss.group(1), tope) if ss else (ihtml.unescape(sr.group(1)) if sr else None)
     if not url:
         return tag
+    # Y no se embeben: son 76 fotos con las de ambiente y la pagina pesaba
+    # 14 MB, que tardaba en pintar nada. En Pages van como ficheros sueltos en
+    # img/, junto al index.html de la ruta, y con carga diferida: se bajan
+    # segun se llega a ellas.
+    if ficha and DESTINO == "publico":
+        carpeta = pathlib.Path(RUTA.strip("/") or ".") / "img"
+        carpeta.mkdir(parents=True, exist_ok=True)
+        nombre = re.sub(r"[^a-z0-9]+", "-", urllib.parse.unquote(url).lower().split("uploads/")[-1].split("&")[0]).strip("-") + ".webp"
+        if not (carpeta / nombre).exists():
+            (carpeta / nombre).write_bytes(get(url))
+        tag = re.sub(r'\s(?:srcSet|srcset)="[^"]*"', "", tag)
+        tag = re.sub(r'\ssrc="[^"]*"', "", tag)
+        return tag[:-1].rstrip("/") + ' src="img/%s">' % nombre
     dato = mete(url)
     tag = re.sub(r'\s(?:srcSet|srcset)="[^"]*"', "", tag)
     tag = re.sub(r'\ssrc="[^"]*"', "", tag)
@@ -637,6 +655,96 @@ reconecta = """
     window.addEventListener('resize', mira);
     mira();
   }
+
+  // Filtros del archivo de colecciones. Misma regla que collection-archive-
+  // grid.tsx: todo suma -cada casilla es un requisito mas-, cada opcion dice
+  // cuantas quedarian y las que vaciarian la pagina se apagan.
+  (function () {
+    var fichas = Array.prototype.slice.call(document.querySelectorAll('[data-collection]'));
+    if (!fichas.length) return;
+    var casillas = Array.prototype.slice.call(document.querySelectorAll('input[data-filter-group]'));
+    var editions = document.querySelector('[data-filter-editions]');
+    var cuenta = document.querySelector('[data-filter-count]');
+    var vacio = document.querySelector('[data-filter-empty]');
+    var borrar = Array.prototype.slice.call(document.querySelectorAll('[data-filter-clear]'));
+    var botones = Array.prototype.slice.call(document.querySelectorAll('[data-filter-toggle]'));
+    var conEd = false;
+    var etiquetas = function (f, g) { return (f.getAttribute('data-' + g) || '').split(' '); };
+    var pasa = function (f, marcados, ed) {
+      return marcados.every(function (m) { return etiquetas(f, m.g).indexOf(m.v) >= 0; }) &&
+        (!ed || f.hasAttribute('data-editions'));
+    };
+    var marcados = function () {
+      return casillas.filter(function (c) { return c.checked; })
+        .map(function (c) { return { g: c.getAttribute('data-filter-group'), v: c.value }; });
+    };
+    var pinta = function () {
+      var m = marcados();
+      var n = 0;
+      fichas.forEach(function (f) { var ok = pasa(f, m, conEd); f.classList.toggle('hidden', !ok); if (ok) n++; });
+      casillas.forEach(function (c) {
+        var q = c.checked ? n : fichas.filter(function (f) {
+          return pasa(f, m.concat([{ g: c.getAttribute('data-filter-group'), v: c.value }]), conEd);
+        }).length;
+        var fila = c.closest('label');
+        var num = fila.querySelector('[data-option-count]');
+        if (num) num.textContent = q;
+        c.disabled = q === 0 && !c.checked;
+        fila.classList.toggle('text-foreground/45', c.disabled);
+        fila.classList.toggle('cursor-pointer', !c.disabled);
+      });
+      botones.forEach(function (b) {
+        var g = b.getAttribute('data-filter-toggle');
+        var k = m.filter(function (x) { return x.g === g; }).length;
+        var marca = b.querySelector('[data-marca]');
+        if (!marca) {
+          marca = document.createElement('span');
+          marca.setAttribute('data-marca', '');
+          marca.className = 'text-foreground/70';
+          b.insertBefore(marca, b.querySelector('svg'));
+        }
+        marca.textContent = k ? '(' + k + ')' : '';
+      });
+      editions.setAttribute('aria-pressed', conEd ? 'true' : 'false');
+      var caja = editions.querySelector('span');
+      ['border-foreground', 'bg-foreground', 'text-background'].forEach(function (c) { caja.classList.toggle(c, conEd); });
+      caja.classList.toggle('border-foreground/50', !conEd);
+      caja.querySelector('svg').classList.toggle('invisible', !conEd);
+      var activos = m.length + (conEd ? 1 : 0);
+      borrar[0].classList.toggle('hidden', !activos);
+      cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', n);
+      vacio.classList.toggle('hidden', n > 0);
+    };
+    var abre = function (b, si) {
+      var panel = document.getElementById(b.getAttribute('aria-controls'));
+      b.setAttribute('aria-expanded', si ? 'true' : 'false');
+      panel.classList.toggle('hidden', !si);
+      var galon = b.querySelector('svg:last-child');
+      if (galon) galon.classList.toggle('rotate-180', si);
+    };
+    botones.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var si = b.getAttribute('aria-expanded') !== 'true';
+        botones.forEach(function (o) { abre(o, false); });
+        abre(b, si);
+      });
+    });
+    var barra = botones[0].closest('div.relative') || document.body;
+    document.addEventListener('pointerdown', function (e) {
+      if (!barra.contains(e.target)) botones.forEach(function (o) { abre(o, false); });
+    });
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') botones.forEach(function (o) { abre(o, false); });
+    });
+    casillas.forEach(function (c) { c.addEventListener('change', pinta); });
+    editions.addEventListener('click', function () { conEd = !conEd; pinta(); });
+    borrar.forEach(function (b) {
+      b.addEventListener('click', function () {
+        casillas.forEach(function (c) { c.checked = false; });
+        conEd = false; pinta();
+      });
+    });
+  })();
 });
 </script>
 """
