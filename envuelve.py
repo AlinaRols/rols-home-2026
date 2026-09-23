@@ -18,7 +18,10 @@ doc = (
     '<meta name="viewport" content="width=device-width,initial-scale=1">'
     '<meta name="robots" content="noindex, nofollow">'
     "<title>" + titulo + "</title>"
-    "<style>:root{color-scheme:light}body{margin:0}img,video{max-width:100%}</style>"
+    # El tope de ancho de img/video va en la capa base: suelto ganaba a todas
+    # las utilidades de Tailwind -que van en capas- y anulaba el max-w-none
+    # de la alfombra de los proyectos en el movil, que se quedaba pequena.
+    "<style>:root{color-scheme:light}body{margin:0}@layer base{img,video{max-width:100%}}</style>"
     "</head><body>" + frag + "</body></html>"
 )
 dest.write_text(doc)

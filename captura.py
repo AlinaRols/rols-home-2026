@@ -456,6 +456,9 @@ reconecta = """
       var diapos = Array.prototype.slice.call(lista.children);
       var bloque = fila.closest('section') || fila.parentElement;
       var beige = getComputedStyle(document.querySelector('header a.bg-beige')).backgroundColor;
+      // El activo en tostado oscuro, como en interiors-carousel.tsx: beige
+      // sobre beige solo se distinguia por el ancho.
+      var tostado = getComputedStyle(document.documentElement).getPropertyValue('--accent-deep').trim() || '#b9906a';
       var cual = 0;
 
       var pinta = function () {
@@ -466,7 +469,7 @@ reconecta = """
         });
         puntos.forEach(function (p, j) {
           p.style.width = j === cual ? '24px' : '6px';
-          p.style.backgroundColor = beige;
+          p.style.backgroundColor = j === cual ? tostado : beige;
           if (j === cual) p.setAttribute('aria-current', 'true');
           else p.removeAttribute('aria-current');
         });
