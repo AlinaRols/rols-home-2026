@@ -705,11 +705,15 @@ reconecta = """
         }
         marca.textContent = k ? '(' + k + ')' : '';
       });
-      editions.setAttribute('aria-pressed', conEd ? 'true' : 'false');
-      var caja = editions.querySelector('span');
-      ['border-foreground', 'bg-foreground', 'text-background'].forEach(function (c) { caja.classList.toggle(c, conEd); });
-      caja.classList.toggle('border-foreground/50', !conEd);
-      caja.querySelector('svg').classList.toggle('invisible', !conEd);
+      // La casilla de Rols Editions ya no esta -van en su propio bloque-,
+      // pero se deja por si vuelve.
+      if (editions) {
+        editions.setAttribute('aria-pressed', conEd ? 'true' : 'false');
+        var caja = editions.querySelector('span');
+        ['border-foreground', 'bg-foreground', 'text-background'].forEach(function (c) { caja.classList.toggle(c, conEd); });
+        caja.classList.toggle('border-foreground/50', !conEd);
+        caja.querySelector('svg').classList.toggle('invisible', !conEd);
+      }
       var activos = m.length + (conEd ? 1 : 0);
       borrar[0].classList.toggle('hidden', !activos);
       cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', n);
@@ -737,7 +741,7 @@ reconecta = """
       if (e.key === 'Escape') botones.forEach(function (o) { abre(o, false); });
     });
     casillas.forEach(function (c) { c.addEventListener('change', pinta); });
-    editions.addEventListener('click', function () { conEd = !conEd; pinta(); });
+    if (editions) editions.addEventListener('click', function () { conEd = !conEd; pinta(); });
     borrar.forEach(function (b) {
       b.addEventListener('click', function () {
         casillas.forEach(function (c) { c.checked = false; });
