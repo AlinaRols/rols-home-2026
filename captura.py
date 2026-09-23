@@ -664,7 +664,9 @@ reconecta = """
     if (!fichas.length) return;
     var casillas = Array.prototype.slice.call(document.querySelectorAll('input[data-filter-group]'));
     var editions = document.querySelector('[data-filter-editions]');
-    var cuenta = document.querySelector('[data-filter-count]');
+    var cuentas = Array.prototype.slice.call(document.querySelectorAll('[data-filter-count]'));
+    var movil = document.querySelector('[data-filter-mobile]');
+    var lista = document.querySelector('[data-filter-list]');
     var vacio = document.querySelector('[data-filter-empty]');
     var borrar = Array.prototype.slice.call(document.querySelectorAll('[data-filter-clear]'));
     var botones = Array.prototype.slice.call(document.querySelectorAll('[data-filter-toggle]'));
@@ -716,7 +718,18 @@ reconecta = """
       }
       var activos = m.length + (conEd ? 1 : 0);
       borrar[0].classList.toggle('hidden', !activos);
-      cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', n);
+      cuentas.forEach(function (c) { c.textContent = c.getAttribute('data-template').replace('{count}', n); });
+      // El titulo "Filtrar" de la columna lleva el numero de filtros puestos.
+      if (movil) {
+        var marcaM = movil.querySelector('[data-marca]');
+        if (!marcaM) {
+          marcaM = document.createElement('span');
+          marcaM.setAttribute('data-marca', '');
+          marcaM.className = 'text-foreground/70';
+          movil.insertBefore(marcaM, movil.querySelector('span'));
+        }
+        marcaM.textContent = activos ? '(' + activos + ')' : '';
+      }
       vacio.classList.toggle('hidden', n > 0);
     };
     var abre = function (b, si) {
@@ -733,8 +746,18 @@ reconecta = """
         abre(b, si);
       });
     });
-    var barra = botones[0].closest('div.relative') || document.body;
-    document.addEventListener('pointerdown', function (e) {
+    // En el movil la columna de filtros se pliega tras "Filtrar".
+    if (movil && lista) {
+      movil.addEventListener('click', function () {
+        var si = movil.getAttribute('aria-expanded') !== 'true';
+        movil.setAttribute('aria-expanded', si ? 'true' : 'false');
+        lista.classList.toggle('hidden', !si);
+        var galon = movil.querySelector('svg');
+        if (galon) galon.classList.toggle('rotate-180', si);
+      });
+    }
+    var barra = (botones[0] && botones[0].closest('div.relative')) || document.body;
+    if (botones.length) document.addEventListener('pointerdown', function (e) {
       if (!barra.contains(e.target)) botones.forEach(function (o) { abre(o, false); });
     });
     window.addEventListener('keydown', function (e) {
