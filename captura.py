@@ -173,6 +173,12 @@ def fix(m):
     tope = 3840 if 'sizes="100vw"' in tag else 1600
     # Las fichas del archivo de colecciones van a un cuarto de pantalla -433 px
     # en la de 1920-, asi que les basta 828, el doble para retina.
+    # Imagenes de ancho fijo -sizes="44px", las bolitas de color-: basta el
+    # doble para retina. Sin esto se llevaban la de 1600 y la pagina de
+    # alfombras pesaba 7,5 MB.
+    fijo = re.search(r'sizes="(\d+)px"', tag)
+    if fijo:
+        tope = max(2 * int(fijo.group(1)), 64)
     ficha = '(min-width: 1024px) 25vw' in tag
     if ficha:
         tope = 828
@@ -655,6 +661,51 @@ reconecta = """
     window.addEventListener('resize', mira);
     mira();
   }
+
+  // Fichas por modelo de "Todas las alfombras": las bolitas cambian la foto,
+  // el nombre del color, el precio y el enlace. Mismas clases que alterna
+  // rug-model-card.tsx; las fotos de todos los colores ya estan apiladas.
+  (function () {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rug-card]'), function (ficha) {
+      var bolas = Array.prototype.slice.call(ficha.querySelectorAll('[data-rug-swatch]'));
+      var elegido = 0;
+      var pinta = function (i) {
+        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-img]'), function (im) {
+          var si = +im.getAttribute('data-rug-img') === i;
+          im.classList.toggle('opacity-100', si); im.classList.toggle('opacity-0', !si);
+        });
+        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-amb]'), function (im) {
+          im.classList.toggle('md:group-hover:opacity-100', +im.getAttribute('data-rug-amb') === i);
+        });
+        var b = bolas[i];
+        ficha.querySelector('[data-rug-color]').textContent = b.getAttribute('data-name');
+        var pr = ficha.querySelector('[data-rug-price]');
+        pr.textContent = pr.getAttribute('data-template').replace('{price}', b.getAttribute('data-price'));
+        ficha.querySelector('[data-rug-link]').setAttribute('href', b.getAttribute('data-href'));
+      };
+      var marca = function () {
+        bolas.forEach(function (b, j) {
+          var si = j === elegido;
+          b.setAttribute('aria-pressed', si ? 'true' : 'false');
+          b.classList.toggle('ring-foreground', si);
+          b.classList.toggle('ring-transparent', !si);
+          b.classList.toggle('hover:ring-foreground/40', !si);
+        });
+      };
+      bolas.forEach(function (b, j) {
+        b.addEventListener('mouseenter', function () { pinta(j); });
+        b.addEventListener('focus', function () { pinta(j); });
+        b.addEventListener('click', function () { elegido = j; marca(); pinta(j); });
+      });
+      var lista = bolas.length && bolas[0].closest('ul');
+      if (lista) lista.addEventListener('mouseleave', function () { pinta(elegido); });
+      var mas = ficha.querySelector('[data-rug-more]');
+      if (mas) mas.addEventListener('click', function () {
+        Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-swatch-item].hidden'), function (li) { li.classList.remove('hidden'); });
+        mas.parentElement.remove();
+      });
+    });
+  })();
 
   // Filtros del archivo de colecciones. Misma regla que collection-archive-
   // grid.tsx: todo suma -cada casilla es un requisito mas-, cada opcion dice
