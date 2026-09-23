@@ -247,6 +247,13 @@ else:
 page = re.sub(r'<script[\s\S]*?</script>', "", page)
 page = re.sub(r'<link[^>]+rel="preload"[^>]*>', "", page)
 
+# GitHub Pages publica dentro de /rols-home-2026, no en la raiz del dominio.
+# Las rutas internas que salen de Next necesitan ese prefijo en la copia
+# estatica: de otro modo el logo y, sobre todo, "Colecciones" llevan a un 404.
+if DESTINO == "publico":
+    page = page.replace('href="/colecciones"', 'href="/rols-home-2026/colecciones/"')
+    page = page.replace('href="/"', 'href="/rols-home-2026/"')
+
 # Sin el runtime de Next hay que reconectar a mano lo que se mueve.
 reconecta = """
 <script>
