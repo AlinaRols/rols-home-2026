@@ -752,6 +752,14 @@ reconecta = """
         var si = movil.getAttribute('aria-expanded') !== 'true';
         movil.setAttribute('aria-expanded', si ? 'true' : 'false');
         lista.classList.toggle('hidden', !si);
+        // Al abrir, la columna aparta las fichas: las clases de cada estado
+        // vienen en data-clases-abierto / data-clases-cerrado.
+        Array.prototype.forEach.call(document.querySelectorAll('[data-clases-abierto]'), function (el) {
+          var quita = el.getAttribute(si ? 'data-clases-cerrado' : 'data-clases-abierto').split(' ');
+          var pon = el.getAttribute(si ? 'data-clases-abierto' : 'data-clases-cerrado').split(' ');
+          quita.forEach(function (c) { if (c) el.classList.remove(c); });
+          pon.forEach(function (c) { if (c) el.classList.add(c); });
+        });
         var galon = movil.querySelector('svg');
         if (galon) galon.classList.toggle('rotate-180', si);
       });
