@@ -6,6 +6,7 @@ sesion: esa se vacia sola y ya hubo que reescribir el script tres veces.
 Uso:
     python3 captura.py salida.html artefacto   # para el visor de Claude
     python3 captura.py salida.html publico     # para GitHub Pages
+    python3 captura.py salida.html publico /colecciones
 
 Sale como fragmento (sin html/head/body): el envoltorio de publicacion del
 artefacto aporta el resto. Para Pages hay que envolverlo (ver envuelve.py).
@@ -19,6 +20,7 @@ DEST = pathlib.Path(sys.argv[1])
 # y donde Safari tampoco sabe reproducir un data: URI, asi que ahi cada bloque
 # de video se queda con su fotograma.
 DESTINO = sys.argv[2] if len(sys.argv) > 2 else "publico"
+RUTA = sys.argv[3] if len(sys.argv) > 3 else "/"
 
 
 # El Accept importa: el optimizador de Next negocia el formato, y sin esta
@@ -37,7 +39,7 @@ def get(u):
     ).read()
 
 
-page = get("/").decode()
+page = get(RUTA).decode()
 
 # El CSS se mete dentro, con sus fuentes y sus imagenes como data URI.
 css = []
