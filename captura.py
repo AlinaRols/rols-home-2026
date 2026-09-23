@@ -669,7 +669,8 @@ reconecta = """
   (function () {
     Array.prototype.forEach.call(document.querySelectorAll('[data-rug-card]'), function (ficha) {
       var bolas = Array.prototype.slice.call(ficha.querySelectorAll('[data-rug-swatch]'));
-      var elegido = 0;
+      // Cada ficha arranca en su color (la pagina saca una ficha por color).
+      var elegido = Math.max(0, bolas.findIndex(function (b) { return b.getAttribute('aria-pressed') === 'true'; }));
       var pinta = function (i) {
         Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-img]'), function (im) {
           var si = +im.getAttribute('data-rug-img') === i;
