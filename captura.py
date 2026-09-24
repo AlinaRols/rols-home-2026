@@ -720,6 +720,7 @@ reconecta = """
       var mostrado = elegido, foto = 0;
       var n = function () { return pista.children.length; };
       var mueve = function () {
+        if (!barra) return;
         pista.style.transform = 'translateX(-' + foto * 100 + '%)';
         barra.style.width = 100 / n() + '%';
         barra.style.transform = 'translateX(' + foto * 100 + '%)';
@@ -733,6 +734,9 @@ reconecta = """
         mostrado = i; foto = 0;
         var b = bolas[i];
         var fotos = b.getAttribute('data-slides').split('|');
+        // Las fichas de prueba "al pasar" solo llevan la esquina y el primer
+        // ambiente, superpuestos.
+        if (ficha.hasAttribute('data-rug-hover')) fotos = fotos.slice(0, 2);
         var alt = pista.firstElementChild ? pista.firstElementChild.getAttribute('alt') : '';
         pista.style.transition = 'none';
         pista.innerHTML = '';
