@@ -360,7 +360,7 @@ reconecta = """
     par[1].addEventListener('click', function () { mueve(1); });
   });
 
-  // En movil no hay hover: la flecha sutil y un gesto corto sobre la imagen
+  // En movil no hay hover: la barrita bajo la foto y un gesto corto sobre la imagen
   // alternan entre el packshot y su foto de ambiente. Un gesto largo o rapido
   // queda libre para desplazar la tira de productos. La captura de Pages no
   // hidrata React, asi que se replica aqui la interaccion de la aplicacion.
@@ -393,6 +393,10 @@ reconecta = """
       boton.setAttribute('aria-label', activa ? boton.dataset.showProduct : boton.dataset.showAmbient);
       var icono = boton.querySelector('svg');
       if (icono) icono.classList.toggle('rotate-180', activa);
+      // La barrita de dos tramos que sustituyo a la flecha: el oscuro pasa
+      // a la derecha cuando se ve el ambiente.
+      var tramo = boton.querySelector('[data-mobile-bar]');
+      if (tramo) { tramo.classList.toggle('translate-x-full', activa); tramo.classList.toggle('translate-x-0', !activa); }
     };
 
     tarjetas.forEach(function (tarjeta) {
