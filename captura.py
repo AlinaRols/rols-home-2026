@@ -344,15 +344,39 @@ reconecta = """
     function (b) { return !!b.querySelector('svg'); });
   tiras.forEach(function (tira, i) {
     var par = botones.slice(i * 2, i * 2 + 2);
+    // Tira sin fin (data-loop): las fichas van tres veces -copia, originales,
+    // copia- y al meterse en una copia se salta una tanda hacia atras o
+    // hacia delante; se ve lo mismo, asi que no se nota. Como en
+    // strip-scroller.tsx.
+    var sinFin = tira.hasAttribute('data-loop');
+    var animando = false;
+    var tanda = function () {
+      var n = tira.children.length / 3;
+      return tira.children[n] ? tira.children[n].offsetLeft - tira.children[0].offsetLeft : 0;
+    };
+    var recoloca = function () {
+      var a = tanda(); if (!a) return;
+      if (tira.scrollLeft < a * 0.5) tira.scrollLeft += a;
+      else if (tira.scrollLeft > a * 1.5) tira.scrollLeft -= a;
+    };
+    if (sinFin) {
+      tira.scrollLeft = tanda();
+      tira.addEventListener('scroll', function () { if (!animando) recoloca(); }, { passive: true });
+    }
     if (par.length < 2) return;
     function mueve(dir) {
+      if (sinFin) recoloca();
       var desde = tira.scrollLeft;
-      var hasta = Math.max(0, Math.min(desde + dir * tira.clientWidth * 0.8, tira.scrollWidth - tira.clientWidth));
+      var hasta = sinFin
+        ? desde + dir * tira.clientWidth * 0.8
+        : Math.max(0, Math.min(desde + dir * tira.clientWidth * 0.8, tira.scrollWidth - tira.clientWidth));
       var t0 = performance.now();
+      animando = true;
       function paso(now) {
         var t = Math.min(1, (now - t0) / 420);
         tira.scrollLeft = desde + (hasta - desde) * (1 - Math.pow(1 - t, 3));
         if (t < 1) requestAnimationFrame(paso);
+        else { animando = false; if (sinFin) recoloca(); }
       }
       requestAnimationFrame(paso);
     }
@@ -922,6 +946,23 @@ reconecta = """
 page = re.sub(r'<!DOCTYPE[^>]*>', "", page, flags=re.I)
 page = re.sub(r'</?(?:html|head|body)(?=[\s>])[^>]*>', "", page, flags=re.I)
 page = "<style>%s</style>%s%s" % ("\n".join(css), page.strip(), reconecta)
+
+# Las imagenes que salen repetidas -las tiras sin fin llevan cada ficha tres
+# veces- no se embeben tres veces: pasan a un fichero en img/ junto al
+# index.html y se enlazan. Solo en Pages y solo las de mas de 20 KB.
+if DESTINO == "publico":
+    import collections, hashlib
+    cuenta = collections.Counter(re.findall(r'src="(data:image/[^;]+;base64,[^"]+)"', page))
+    for uri, veces in cuenta.items():
+        if veces < 2 or len(uri) < 20000:
+            continue
+        tipo_img, datos = uri[5:].split(";base64,", 1)
+        ext = {"image/webp": "webp", "image/png": "png", "image/jpeg": "jpg", "image/avif": "avif", "image/svg+xml": "svg"}.get(tipo_img, "bin")
+        carpeta = pathlib.Path(RUTA.strip("/") or ".") / "img"
+        carpeta.mkdir(parents=True, exist_ok=True)
+        nombre = "rep-" + hashlib.md5(datos.encode()).hexdigest()[:12] + "." + ext
+        (carpeta / nombre).write_bytes(base64.b64decode(datos))
+        page = page.replace('src="%s"' % uri, 'src="img/%s"' % nombre)
 DEST.write_text(page)
 
 # Red de seguridad: en una pagina estatica no puede quedar nada apuntando al
