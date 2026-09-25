@@ -275,6 +275,13 @@ def video(m):
             if candidato != nombre and (DEST.parent / candidato).exists():
                 nombre = candidato
                 break
+        # Los videos de otras rutas (los editoriales de /alfombras) se copian
+        # del proyecto a la carpeta de esa ruta, junto a su index.html.
+        if RUTA.strip("/") and src.group(1).startswith("/"):
+            origen = pathlib.Path.home() / "Desktop/Claude Proyectos/Rols | Web 2026/public" / src.group(1).lstrip("/")
+            destino = pathlib.Path(RUTA.strip("/")) / nombre
+            if origen.exists() and (not destino.exists() or destino.stat().st_size != origen.stat().st_size):
+                destino.write_bytes(origen.read_bytes())
         tag = tag.replace(src.group(1), nombre, 1)
     return tag
 
