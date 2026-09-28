@@ -198,6 +198,12 @@ def fix(m):
     ficha = '(min-width: 1024px) 25vw' in tag
     if ficha:
         tope = 828
+    # La galeria de la ficha de producto: ocho fotos a un tercio de pantalla.
+    # Van a ficheros, como las de las fichas, para que la pagina no pese.
+    galeria = '(min-width: 1024px) 35vw' in tag
+    if galeria:
+        tope = 1200
+        ficha = True
     url = pick(ss.group(1), tope) if ss else (ihtml.unescape(sr.group(1)) if sr else None)
     if not url:
         return tag
@@ -277,6 +283,13 @@ def video(m):
                 break
         # Los videos de otras rutas (los editoriales de /alfombras) se copian
         # del proyecto a la carpeta de esa ruta, junto a su index.html.
+        # En las fichas de producto (/alfombras/<color>) el video de la
+        # coleccion ya esta en alfombras/, junto a la pagina de todas: se
+        # enlaza ese en vez de copiarlo otra vez en cada color.
+        padre = pathlib.Path(RUTA.strip("/")).parent
+        if RUTA.strip("/").count("/") >= 1 and src.group(1).startswith("/") and (padre / nombre).exists():
+            tag = tag.replace(src.group(1), "../" + nombre, 1)
+            return tag
         if RUTA.strip("/") and src.group(1).startswith("/"):
             origen = pathlib.Path.home() / "Desktop/Claude Proyectos/Rols | Web 2026/public" / src.group(1).lstrip("/")
             destino = pathlib.Path(RUTA.strip("/")) / nombre
@@ -323,6 +336,8 @@ page = re.sub(r'<link[^>]+rel="preload"[^>]*>', "", page)
 if DESTINO == "publico":
     page = page.replace('href="/colecciones"', 'href="/rols-home-2026/colecciones/"')
     page = page.replace('href="/alfombras"', 'href="/rols-home-2026/alfombras/"')
+    # Las fichas de producto de la maqueta: /alfombras/<color> es una carpeta.
+    page = re.sub(r'href="/alfombras/([a-z0-9-]+)"', r'href="/rols-home-2026/alfombras/\1/"', page)
     page = page.replace('href="/"', 'href="/rols-home-2026/"')
 
 # Sin el runtime de Next hay que reconectar a mano lo que se mueve.
@@ -904,6 +919,157 @@ reconecta = """
       panel.classList.toggle('hidden', !si);
       var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', si);
     });
+  })();
+
+  // Visor de fotos de la ficha de producto (rug-gallery.tsx): se abre al
+  // pinchar una foto, con flechas, miniaturas, teclado y zoom que sigue al
+  // raton o al dedo.
+  (function () {
+    var visor = document.querySelector('[data-lb]');
+    if (!visor) return;
+    var abre = document.querySelectorAll('[data-lb-open]');
+    var img = visor.querySelector('[data-lb-img]');
+    var escena = visor.querySelector('[data-lb-stage]');
+    var cuenta = visor.querySelector('[data-lb-count]');
+    var miniaturas = visor.querySelectorAll('[data-lb-thumb]');
+    var total = abre.length, actual = 0, zoom = false, toque = null, deslizo = false, antes = '';
+    var grande = function (n) {
+      var b = abre[n], f = b.getAttribute('data-full');
+      if (f && f.charAt(0) !== '/') return f;
+      var i = b.querySelector('img');
+      return i ? (i.currentSrc || i.src) : '';
+    };
+    var ponZoom = function (on) {
+      zoom = on;
+      img.style.transform = on ? 'scale(2.5)' : 'scale(1)';
+      escena.classList.toggle('cursor-zoom-out', on);
+      escena.classList.toggle('cursor-zoom-in', !on);
+    };
+    var punto = function (e) {
+      var r = escena.getBoundingClientRect();
+      var x = Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100));
+      var y = Math.min(100, Math.max(0, (e.clientY - r.top) / r.height * 100));
+      img.style.transformOrigin = x + '% ' + y + '%';
+    };
+    var ve = function (n) {
+      actual = ((n % total) + total) % total;
+      ponZoom(false);
+      img.src = grande(actual);
+      img.alt = (abre[actual].querySelector('img') || {}).alt || '';
+      cuenta.textContent = cuenta.getAttribute('data-template').replace('{n}', actual + 1).replace('{total}', total);
+      Array.prototype.forEach.call(miniaturas, function (t, k) {
+        var on = k === actual;
+        if (on) t.setAttribute('aria-current', 'true'); else t.removeAttribute('aria-current');
+        ['ring-1', 'ring-foreground', 'ring-offset-2', 'ring-offset-background'].forEach(function (c) { t.classList.toggle(c, on); });
+        ['opacity-60', 'hover:opacity-100'].forEach(function (c) { t.classList.toggle(c, !on); });
+      });
+    };
+    var teclas = function (e) {
+      if (e.key === 'Escape') cierra();
+      if (e.key === 'ArrowLeft') ve(actual - 1);
+      if (e.key === 'ArrowRight') ve(actual + 1);
+    };
+    var cierra = function () {
+      ponZoom(false);
+      visor.classList.add('hidden');
+      document.documentElement.style.overflow = antes;
+      window.removeEventListener('keydown', teclas);
+    };
+    Array.prototype.forEach.call(abre, function (b, k) {
+      b.addEventListener('click', function () {
+        antes = document.documentElement.style.overflow;
+        document.documentElement.style.overflow = 'hidden';
+        visor.classList.remove('hidden');
+        window.addEventListener('keydown', teclas);
+        ve(k);
+      });
+    });
+    Array.prototype.forEach.call(miniaturas, function (t, k) { t.addEventListener('click', function () { ve(k); }); });
+    visor.querySelector('[data-lb-close]').addEventListener('click', cierra);
+    visor.querySelector('[data-lb-prev]').addEventListener('click', function () { ve(actual - 1); });
+    visor.querySelector('[data-lb-next]').addEventListener('click', function () { ve(actual + 1); });
+    escena.addEventListener('pointerdown', function (e) { toque = { x: e.clientX, y: e.clientY }; deslizo = false; });
+    escena.addEventListener('pointermove', function (e) { if (zoom) punto(e); });
+    escena.addEventListener('pointerup', function (e) {
+      if (toque && !zoom && Math.abs(e.clientX - toque.x) > 50 && Math.abs(e.clientX - toque.x) > Math.abs(e.clientY - toque.y)) {
+        deslizo = true;
+        ve(actual + (e.clientX < toque.x ? 1 : -1));
+      }
+    });
+    escena.addEventListener('click', function (e) {
+      if (deslizo) return;
+      punto(e);
+      ponZoom(!zoom);
+    });
+  })();
+
+  // Configurador de la ficha de producto (rug-configurator.tsx): forma,
+  // medidas y precio con la misma formula que alli.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-rug-config]'), function (cfg) {
+    var n = function (k) { return parseFloat(cfg.getAttribute(k)); };
+    var rolls = cfg.getAttribute('data-rolls').split(',').map(parseFloat);
+    var cortes = (cfg.getAttribute('data-breaks') || '200,300').split(',').map(parseFloat);
+    var selector = cfg.querySelector('[data-shape-select]');
+    var euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+    var campo = function (id) { return cfg.querySelector('[data-dim="' + id + '"]'); };
+    var dentro = function (el, max) { var v = parseFloat(el.value); return isFinite(v) && v >= n('data-min') && v <= max ? v : undefined; };
+    function calcula() {
+      var forma = selector ? selector.value : 'rect';
+      Array.prototype.forEach.call(cfg.querySelectorAll('[data-dims]'), function (d) { d.classList.toggle('hidden', d.getAttribute('data-dims') !== forma); });
+      var w, l;
+      if (forma === 'rect') { w = dentro(campo('width'), n('data-max-width')); l = dentro(campo('length'), n('data-max-length')); }
+      else { w = dentro(campo('diameter'), n('data-max-width')); l = w; }
+      var precio = cfg.querySelector('[data-price-out]');
+      if (w === undefined || l === undefined) { precio.textContent = '\u2014'; return; }
+      var ancho = forma === 'round' ? l : w;
+      var rollo = ancho <= cortes[0] ? rolls[0] : ancho <= cortes[1] ? rolls[1] : rolls[2];
+      var contorno = forma === 'round' ? 3.1416 * l / 100 : (2 * w + 2 * l) / 100;
+      precio.textContent = euros.format((l / 100) * rollo * n('data-area-price') + contorno * n('data-finish-price'));
+    }
+    if (selector) selector.addEventListener('change', calcula);
+    Array.prototype.forEach.call(cfg.querySelectorAll('[data-dim]'), function (i) { i.addEventListener('input', calcula); });
+  });
+
+  // Puntos de la galeria de la ficha en el movil (rug-gallery.tsx).
+  Array.prototype.forEach.call(document.querySelectorAll('[data-gal-track]'), function (pista) {
+    var puntos = pista.parentNode.querySelectorAll('[data-gal-dot]');
+    pista.addEventListener('scroll', function () {
+      var k = Math.round(pista.scrollLeft / Math.max(1, pista.clientWidth));
+      Array.prototype.forEach.call(puntos, function (d, i) {
+        d.classList.toggle('bg-foreground', i === k);
+        d.classList.toggle('bg-foreground/25', i !== k);
+      });
+    }, { passive: true });
+  });
+
+  // Cajon del pasaporte de producto (rug-passport.tsx).
+  (function () {
+    var cajon = document.querySelector('[data-pp-drawer]');
+    if (!cajon) return;
+    var titulo = cajon.querySelector('[data-pp-title]');
+    var paneles = cajon.querySelectorAll('[data-pp-panel]');
+    var antes = '';
+    var teclas = function (e) { if (e.key === 'Escape') cierra(); };
+    var cierra = function () {
+      cajon.setAttribute('data-state', 'closed');
+      document.documentElement.style.overflow = antes;
+      window.removeEventListener('keydown', teclas);
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-pp-open]'), function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-pp-open');
+        Array.prototype.forEach.call(paneles, function (p) {
+          var on = p.getAttribute('data-pp-panel') === id;
+          p.classList.toggle('hidden', !on);
+          if (on) { titulo.textContent = p.getAttribute('data-label'); cajon.setAttribute('aria-label', p.getAttribute('data-label')); }
+        });
+        antes = document.documentElement.style.overflow;
+        document.documentElement.style.overflow = 'hidden';
+        cajon.setAttribute('data-state', 'open');
+        window.addEventListener('keydown', teclas);
+      });
+    });
+    Array.prototype.forEach.call(cajon.querySelectorAll('[data-pp-close]'), function (b) { b.addEventListener('click', cierra); });
   })();
 
   // Filtros del archivo de colecciones. Misma regla que collection-archive-
