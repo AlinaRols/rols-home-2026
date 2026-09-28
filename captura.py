@@ -819,32 +819,90 @@ reconecta = """
     });
   })();
 
-  // Categorias de "Todas las alfombras": cada ficha de categoria enseña su
-  // reticula (data-cat-grid) y esconde las demas; pinchar otra vez la misma,
-  // o "Ver todas", vuelve a todas. Como rug-category-picker.tsx.
+  // Categorias y filtros de "Todas las alfombras", como en
+  // rug-category-picker.tsx: cada ficha de categoria enseña su reticula
+  // (data-cat-grid); los filtros esconden las fichas que no pasan leyendo sus
+  // data-colors / data-qualities / data-types. El color basta con uno; el
+  // resto suma. Con filtros puestos se quitan las fotos editoriales.
   (function () {
-    var fichas = Array.prototype.slice.call(document.querySelectorAll('[data-cat-tile]'));
+    var fichasCat = Array.prototype.slice.call(document.querySelectorAll('[data-cat-tile]'));
     var rejillas = Array.prototype.slice.call(document.querySelectorAll('[data-cat-grid]'));
-    if (!fichas.length) return;
+    if (!fichasCat.length) return;
+    var casillas = Array.prototype.slice.call(document.querySelectorAll('input[data-rug-filter]'));
+    var boton = document.querySelector('[data-rug-filter-toggle]');
+    var panel = document.querySelector('[data-rug-filter-panel]');
+    var limpiar = document.querySelector('[data-rug-filter-clear]');
+    var cuenta = document.querySelector('[data-rug-shown]');
+    var marca = document.querySelector('[data-rug-filter-count]');
+    var vacio = document.querySelector('[data-rug-empty]');
     var activa = 'todas';
+    var lista = function (el, k) { return (el.getAttribute(k) || '').split(' ').filter(Boolean); };
+    var filtros = function () {
+      var f = { colors: [], qualities: [], types: [], materials: [] };
+      casillas.forEach(function (c) { if (c.checked) f[c.getAttribute('data-rug-filter')].push(c.value); });
+      return f;
+    };
+    var pasa = function (el, f) {
+      var col = lista(el, 'data-colors'), q = lista(el, 'data-qualities'), t = lista(el, 'data-types');
+      return (f.colors.length === 0 || f.colors.some(function (c) { return col.indexOf(c) >= 0; })) &&
+        f.qualities.every(function (x) { return q.indexOf(x) >= 0; }) &&
+        f.types.every(function (x) { return t.indexOf(x) >= 0; }) &&
+        f.materials.every(function (x) { return t.indexOf(x) >= 0; });
+    };
     var pinta = function () {
-      rejillas.forEach(function (g) { g.classList.toggle('hidden', g.getAttribute('data-cat-grid') !== activa); });
-      fichas.forEach(function (f) {
-        var id = f.getAttribute('data-cat-tile'), si = id === activa;
-        f.setAttribute('aria-pressed', si ? 'true' : 'false');
-        if (id === 'todas') { f.classList.toggle('invisible', si); return; }
-        var caja = f.querySelector('span');
+      var f = filtros();
+      var n = f.colors.length + f.qualities.length + f.types.length + f.materials.length;
+      var rejilla = null;
+      rejillas.forEach(function (g) {
+        var si = g.getAttribute('data-cat-grid') === activa;
+        g.classList.toggle('hidden', !si);
+        if (si) rejilla = g;
+      });
+      fichasCat.forEach(function (b) {
+        var id = b.getAttribute('data-cat-tile'), si = id === activa;
+        b.setAttribute('aria-pressed', si ? 'true' : 'false');
+        if (id === 'todas') { b.classList.toggle('invisible', si); return; }
+        var caja = b.querySelector('span');
         caja.classList.toggle('ring-foreground', si);
         caja.classList.toggle('ring-transparent', !si);
-        caja.classList.toggle('group-hover:ring-foreground/30', !si);
       });
+      var tarjetas = Array.prototype.slice.call(rejilla.querySelectorAll('[data-rug-card]'));
+      var vistas = 0;
+      document.querySelectorAll('[data-rug-card]').forEach(function (el) {
+        var ok = pasa(el, f); el.classList.toggle('hidden', !ok);
+      });
+      tarjetas.forEach(function (el) { if (!el.classList.contains('hidden')) vistas++; });
+      document.querySelectorAll('[data-editorial]').forEach(function (el) { el.classList.toggle('hidden', n > 0); });
+      casillas.forEach(function (c) {
+        var g = c.getAttribute('data-rug-filter');
+        var prueba = JSON.parse(JSON.stringify(f));
+        if (!c.checked) prueba[g] = g === 'colors' ? [c.value] : prueba[g].concat([c.value]);
+        var k = tarjetas.filter(function (el) { return pasa(el, prueba); }).length;
+        var fila = c.closest('label');
+        fila.querySelector('[data-rug-option-count]').textContent = k;
+        c.disabled = k === 0 && !c.checked;
+        fila.classList.toggle('text-foreground/45', c.disabled);
+        fila.classList.toggle('cursor-pointer', !c.disabled);
+      });
+      cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', vistas);
+      if (marca) marca.textContent = n ? '(' + n + ')' : '';
+      limpiar.classList.toggle('hidden', !n);
+      vacio.classList.toggle('hidden', vistas > 0);
     };
-    fichas.forEach(function (f) {
-      f.addEventListener('click', function () {
-        var id = f.getAttribute('data-cat-tile');
+    fichasCat.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-cat-tile');
         activa = id === 'todas' || id === activa ? 'todas' : id;
         pinta();
       });
+    });
+    casillas.forEach(function (c) { c.addEventListener('change', pinta); });
+    limpiar.addEventListener('click', function () { casillas.forEach(function (c) { c.checked = false; }); pinta(); });
+    boton.addEventListener('click', function () {
+      var si = boton.getAttribute('aria-expanded') !== 'true';
+      boton.setAttribute('aria-expanded', si ? 'true' : 'false');
+      panel.classList.toggle('hidden', !si);
+      var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', si);
     });
   })();
 
