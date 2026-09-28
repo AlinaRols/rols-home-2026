@@ -819,6 +819,35 @@ reconecta = """
     });
   })();
 
+  // Categorias de "Todas las alfombras": cada ficha de categoria enseña su
+  // reticula (data-cat-grid) y esconde las demas; pinchar otra vez la misma,
+  // o "Ver todas", vuelve a todas. Como rug-category-picker.tsx.
+  (function () {
+    var fichas = Array.prototype.slice.call(document.querySelectorAll('[data-cat-tile]'));
+    var rejillas = Array.prototype.slice.call(document.querySelectorAll('[data-cat-grid]'));
+    if (!fichas.length) return;
+    var activa = 'todas';
+    var pinta = function () {
+      rejillas.forEach(function (g) { g.classList.toggle('hidden', g.getAttribute('data-cat-grid') !== activa); });
+      fichas.forEach(function (f) {
+        var id = f.getAttribute('data-cat-tile'), si = id === activa;
+        f.setAttribute('aria-pressed', si ? 'true' : 'false');
+        if (id === 'todas') { f.classList.toggle('invisible', si); return; }
+        var caja = f.querySelector('span');
+        caja.classList.toggle('ring-foreground', si);
+        caja.classList.toggle('ring-transparent', !si);
+        caja.classList.toggle('group-hover:ring-foreground/30', !si);
+      });
+    };
+    fichas.forEach(function (f) {
+      f.addEventListener('click', function () {
+        var id = f.getAttribute('data-cat-tile');
+        activa = id === 'todas' || id === activa ? 'todas' : id;
+        pinta();
+      });
+    });
+  })();
+
   // Filtros del archivo de colecciones. Misma regla que collection-archive-
   // grid.tsx: todo suma -cada casilla es un requisito mas-, cada opcion dice
   // cuantas quedarian y las que vaciarian la pagina se apagan.
