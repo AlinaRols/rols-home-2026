@@ -160,13 +160,21 @@ def mete(url, mime=None):
 
 
 def a_fichero(url):
-    """Baja una imagen a img/ junto al index.html de la ruta y da su nombre."""
-    carpeta = pathlib.Path(RUTA.strip("/") or ".") / "img"
+    """Baja una imagen a img/ junto al index.html de la ruta y da su nombre.
+
+    Las paginas que cuelgan de /alfombras (categorias y fichas) comparten la
+    carpeta alfombras/img: son las mismas fichas y no se repiten en cada una.
+    """
+    partes = RUTA.strip("/").split("/")
+    if len(partes) == 2 and partes[0] == "alfombras":
+        carpeta, prefijo = pathlib.Path("alfombras") / "img", "../img/"
+    else:
+        carpeta, prefijo = pathlib.Path(RUTA.strip("/") or ".") / "img", "img/"
     carpeta.mkdir(parents=True, exist_ok=True)
     nombre = re.sub(r"[^a-z0-9]+", "-", urllib.parse.unquote(url).lower().split("uploads/")[-1].split("&")[0]).strip("-") + ".webp"
     if not (carpeta / nombre).exists():
         (carpeta / nombre).write_bytes(get(url))
-    return "img/" + nombre
+    return prefijo + nombre
 
 
 def original(url):
@@ -840,9 +848,9 @@ reconecta = """
   // data-colors / data-qualities / data-types. El color basta con uno; el
   // resto suma. Con filtros puestos se quitan las fotos editoriales.
   (function () {
-    var fichasCat = Array.prototype.slice.call(document.querySelectorAll('[data-cat-tile]'));
-    var rejillas = Array.prototype.slice.call(document.querySelectorAll('[data-cat-grid]'));
-    if (!fichasCat.length) return;
+    // Cada categoria tiene ya su pagina: aqui solo hay una reticula.
+    var rejilla = document.querySelector('[data-cat-grid]');
+    if (!rejilla) return;
     var casillas = Array.prototype.slice.call(document.querySelectorAll('input[data-rug-filter]'));
     var boton = document.querySelector('[data-rug-filter-toggle]');
     var panel = document.querySelector('[data-rug-filter-panel]');
@@ -850,7 +858,8 @@ reconecta = """
     var cuenta = document.querySelector('[data-rug-shown]');
     var marca = document.querySelector('[data-rug-filter-count]');
     var vacio = document.querySelector('[data-rug-empty]');
-    var activa = 'todas';
+    var zona = document.querySelector('[data-rug-zone]');
+    var abierto = false;
     var lista = function (el, k) { return (el.getAttribute(k) || '').split(' ').filter(Boolean); };
     var filtros = function () {
       var f = { colors: [], qualities: [], types: [], materials: [] };
@@ -867,27 +876,10 @@ reconecta = """
     var pinta = function () {
       var f = filtros();
       var n = f.colors.length + f.qualities.length + f.types.length + f.materials.length;
-      var rejilla = null;
-      rejillas.forEach(function (g) {
-        var si = g.getAttribute('data-cat-grid') === activa;
-        g.classList.toggle('hidden', !si);
-        if (si) rejilla = g;
-      });
-      fichasCat.forEach(function (b) {
-        var id = b.getAttribute('data-cat-tile'), si = id === activa;
-        b.setAttribute('aria-pressed', si ? 'true' : 'false');
-        if (id === 'todas') { b.classList.toggle('invisible', si); return; }
-        var caja = b.querySelector('span');
-        caja.classList.toggle('ring-foreground', si);
-        caja.classList.toggle('ring-transparent', !si);
-      });
       var tarjetas = Array.prototype.slice.call(rejilla.querySelectorAll('[data-rug-card]'));
       var vistas = 0;
-      document.querySelectorAll('[data-rug-card]').forEach(function (el) {
-        var ok = pasa(el, f); el.classList.toggle('hidden', !ok);
-      });
-      tarjetas.forEach(function (el) { if (!el.classList.contains('hidden')) vistas++; });
-      document.querySelectorAll('[data-editorial]').forEach(function (el) { el.classList.toggle('hidden', n > 0); });
+      tarjetas.forEach(function (el) { var ok = pasa(el, f); el.classList.toggle('hidden', !ok); if (ok) vistas++; });
+      document.querySelectorAll('[data-editorial]').forEach(function (el) { el.classList.toggle('hidden', n > 0 || abierto); });
       casillas.forEach(function (c) {
         var g = c.getAttribute('data-rug-filter');
         var prueba = JSON.parse(JSON.stringify(f));
@@ -904,20 +896,21 @@ reconecta = """
       limpiar.classList.toggle('hidden', !n);
       vacio.classList.toggle('hidden', vistas > 0);
     };
-    fichasCat.forEach(function (b) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-cat-tile');
-        activa = id === 'todas' || id === activa ? 'todas' : id;
-        pinta();
-      });
-    });
     casillas.forEach(function (c) { c.addEventListener('change', pinta); });
     limpiar.addEventListener('click', function () { casillas.forEach(function (c) { c.checked = false; }); pinta(); });
+    // "Filtrar" abre la columna de la izquierda y aparta las fichas, como en
+    // colecciones: las clases de cada estado vienen en data-rug-clases-*.
     boton.addEventListener('click', function () {
-      var si = boton.getAttribute('aria-expanded') !== 'true';
-      boton.setAttribute('aria-expanded', si ? 'true' : 'false');
-      panel.classList.toggle('hidden', !si);
-      var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', si);
+      abierto = boton.getAttribute('aria-expanded') !== 'true';
+      boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+      panel.classList.toggle('hidden', !abierto);
+      if (zona) zona.setAttribute('data-filtros', abierto ? 'abierto' : 'cerrado');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-rug-clases-abierto]'), function (el) {
+        el.getAttribute(abierto ? 'data-rug-clases-cerrado' : 'data-rug-clases-abierto').split(' ').forEach(function (c) { if (c) el.classList.remove(c); });
+        el.getAttribute(abierto ? 'data-rug-clases-abierto' : 'data-rug-clases-cerrado').split(' ').forEach(function (c) { if (c) el.classList.add(c); });
+      });
+      var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', abierto);
+      pinta();
     });
   })();
 
