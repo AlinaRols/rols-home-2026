@@ -892,26 +892,36 @@ reconecta = """
         fila.classList.toggle('cursor-pointer', !c.disabled);
       });
       cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', vistas);
+      var aplicar = document.querySelector('[data-rug-apply]');
+      if (aplicar) aplicar.textContent = aplicar.getAttribute('data-template').replace('{count}', vistas);
       if (marca) marca.textContent = n ? '(' + n + ')' : '';
       limpiar.classList.toggle('hidden', !n);
       vacio.classList.toggle('hidden', vistas > 0);
     };
     casillas.forEach(function (c) { c.addEventListener('change', pinta); });
     limpiar.addEventListener('click', function () { casillas.forEach(function (c) { c.checked = false; }); pinta(); });
-    // "Filtrar" abre la columna de la izquierda y aparta las fichas, como en
-    // colecciones: las clases de cada estado vienen en data-rug-clases-*.
-    boton.addEventListener('click', function () {
-      abierto = boton.getAttribute('aria-expanded') !== 'true';
-      boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
-      panel.classList.toggle('hidden', !abierto);
-      if (zona) zona.setAttribute('data-filtros', abierto ? 'abierto' : 'cerrado');
+    // "Filtrar" abre la columna de la izquierda (en el movil, un cajon con
+    // velo y "Ver N resultados"), como en rug-category-picker.tsx: las clases
+    // de cada estado vienen en data-rug-clases-*.
+    var movil = function () { return window.matchMedia('(max-width: 899px)').matches; };
+    var abre = function (si) {
+      abierto = si;
+      boton.setAttribute('aria-expanded', si ? 'true' : 'false');
+      if (zona) zona.setAttribute('data-filtros', si ? 'abierto' : 'cerrado');
       Array.prototype.forEach.call(document.querySelectorAll('[data-rug-clases-abierto]'), function (el) {
-        el.getAttribute(abierto ? 'data-rug-clases-cerrado' : 'data-rug-clases-abierto').split(' ').forEach(function (c) { if (c) el.classList.remove(c); });
-        el.getAttribute(abierto ? 'data-rug-clases-abierto' : 'data-rug-clases-cerrado').split(' ').forEach(function (c) { if (c) el.classList.add(c); });
+        el.getAttribute(si ? 'data-rug-clases-cerrado' : 'data-rug-clases-abierto').split(' ').forEach(function (c) { if (c) el.classList.remove(c); });
+        el.getAttribute(si ? 'data-rug-clases-abierto' : 'data-rug-clases-cerrado').split(' ').forEach(function (c) { if (c) el.classList.add(c); });
       });
-      var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', abierto);
+      var gal = boton.querySelector('svg'); if (gal) gal.classList.toggle('rotate-180', si);
+      document.body.style.overflow = si && movil() ? 'hidden' : '';
       pinta();
+    };
+    boton.addEventListener('click', function () { abre(boton.getAttribute('aria-expanded') !== 'true'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-rug-filter-close]'), function (b) {
+      b.addEventListener('click', function () { abre(false); });
     });
+    // En el movil los grupos empiezan plegados.
+    if (movil()) Array.prototype.forEach.call(document.querySelectorAll('[data-rug-group]'), function (d) { d.open = false; });
   })();
 
   // Visor de fotos de la ficha de producto (rug-gallery.tsx): se abre al
