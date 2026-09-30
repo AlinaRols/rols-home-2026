@@ -1088,8 +1088,11 @@ reconecta = """
     var botones = Array.prototype.slice.call(document.querySelectorAll('[data-filter-toggle]'));
     var conEd = false;
     var etiquetas = function (f, g) { return (f.getAttribute('data-' + g) || '').split(' '); };
+    // El color va aparte: dentro de el basta con uno (azul O verde).
     var pasa = function (f, marcados, ed) {
-      return marcados.every(function (m) { return etiquetas(f, m.g).indexOf(m.v) >= 0; }) &&
+      var col = marcados.filter(function (m) { return m.g === 'colors'; });
+      return marcados.every(function (m) { return m.g === 'colors' || etiquetas(f, m.g).indexOf(m.v) >= 0; }) &&
+        (!col.length || col.some(function (m) { return etiquetas(f, 'colors').indexOf(m.v) >= 0; })) &&
         (!ed || f.hasAttribute('data-editions'));
     };
     var marcados = function () {
