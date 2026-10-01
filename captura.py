@@ -866,12 +866,16 @@ reconecta = """
       casillas.forEach(function (c) { if (c.checked) f[c.getAttribute('data-rug-filter')].push(c.value); });
       return f;
     };
+    // Color, tipologia y material: basta con uno. Cualidades: suman.
+    var ALTERNATIVAS = ['colors', 'types', 'materials'];
     var pasa = function (el, f) {
-      var col = lista(el, 'data-colors'), q = lista(el, 'data-qualities'), t = lista(el, 'data-types');
-      return (f.colors.length === 0 || f.colors.some(function (c) { return col.indexOf(c) >= 0; })) &&
-        f.qualities.every(function (x) { return q.indexOf(x) >= 0; }) &&
-        f.types.every(function (x) { return t.indexOf(x) >= 0; }) &&
-        f.materials.every(function (x) { return t.indexOf(x) >= 0; });
+      var q = lista(el, 'data-qualities');
+      return f.qualities.every(function (x) { return q.indexOf(x) >= 0; }) &&
+        ALTERNATIVAS.every(function (g) {
+          if (!f[g].length) return true;
+          var v = lista(el, 'data-' + g);
+          return f[g].some(function (x) { return v.indexOf(x) >= 0; });
+        });
     };
     var pinta = function () {
       var f = filtros();
@@ -883,7 +887,7 @@ reconecta = """
       casillas.forEach(function (c) {
         var g = c.getAttribute('data-rug-filter');
         var prueba = JSON.parse(JSON.stringify(f));
-        if (!c.checked) prueba[g] = g === 'colors' ? [c.value] : prueba[g].concat([c.value]);
+        if (!c.checked) prueba[g] = ALTERNATIVAS.indexOf(g) >= 0 ? [c.value] : prueba[g].concat([c.value]);
         var k = tarjetas.filter(function (el) { return pasa(el, prueba); }).length;
         var fila = c.closest('label');
         fila.querySelector('[data-rug-option-count]').textContent = k;
