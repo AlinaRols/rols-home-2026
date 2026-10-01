@@ -883,7 +883,7 @@ reconecta = """
       var tarjetas = Array.prototype.slice.call(rejilla.querySelectorAll('[data-rug-card]'));
       var vistas = 0;
       tarjetas.forEach(function (el) { var ok = pasa(el, f); el.classList.toggle('hidden', !ok); if (ok) vistas++; });
-      document.querySelectorAll('[data-editorial]').forEach(function (el) { el.classList.toggle('hidden', n > 0 || abierto); });
+      document.querySelectorAll('[data-editorial]').forEach(function (el) { el.classList.toggle('hidden', n > 0); });
       casillas.forEach(function (c) {
         var g = c.getAttribute('data-rug-filter');
         var prueba = JSON.parse(JSON.stringify(f));
