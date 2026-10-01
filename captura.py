@@ -896,6 +896,40 @@ reconecta = """
         fila.classList.toggle('cursor-pointer', !c.disabled);
       });
       cuenta.textContent = cuenta.getAttribute('data-template').replace('{count}', vistas);
+      // Pastillas con lo marcado junto a "Filtrar" (rug-category-picker.tsx).
+      var chips = document.querySelector('[data-rug-chips]');
+      if (chips) {
+        chips.innerHTML = '';
+        var marcadas = casillas.filter(function (c) { return c.checked; });
+        marcadas.forEach(function (c) {
+          var fila = c.closest('label');
+          var nombre = fila.querySelector('.flex-1').textContent;
+          var li = document.createElement('li');
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'group/chip inline-flex h-7 items-center gap-2 rounded-full border border-line py-0 pr-2.5 pl-3 text-[12px] transition-colors duration-300 hover:border-foreground/40';
+          if (c.getAttribute('data-rug-filter') === 'colors') {
+            var circ = fila.querySelector('span[style]');
+            var dot = document.createElement('span');
+            dot.className = 'size-2.5 rounded-full shadow-[inset_0_0_0_1px_rgba(51,58,60,.14)]';
+            if (circ) dot.setAttribute('style', circ.getAttribute('style'));
+            b.appendChild(dot);
+          }
+          b.appendChild(document.createTextNode(nombre));
+          b.insertAdjacentHTML('beforeend', '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="size-3 text-foreground/50"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>');
+          b.addEventListener('click', function () { c.checked = false; pinta(); });
+          li.appendChild(b); chips.appendChild(li);
+        });
+        if (marcadas.length > 1) {
+          var li2 = document.createElement('li');
+          var x = document.createElement('button');
+          x.type = 'button';
+          x.className = 'ml-1 text-[12px] text-foreground/70 underline decoration-foreground/30 underline-offset-4';
+          x.textContent = limpiar.textContent;
+          x.addEventListener('click', function () { casillas.forEach(function (k) { k.checked = false; }); pinta(); });
+          li2.appendChild(x); chips.appendChild(li2);
+        }
+      }
       var aplicar = document.querySelector('[data-rug-apply]');
       if (aplicar) aplicar.textContent = aplicar.getAttribute('data-template').replace('{count}', vistas);
       if (marca) marca.textContent = n ? '(' + n + ')' : '';
