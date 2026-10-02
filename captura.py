@@ -1072,13 +1072,8 @@ reconecta = """
       Array.prototype.forEach.call(modos, function (b) {
         var on = b === activo;
         b.setAttribute('aria-checked', on ? 'true' : 'false');
-        ['border-foreground', 'bg-surface'].forEach(function (c) { b.classList.toggle(c, on); });
-        ['border-line', 'text-foreground/60', 'hover:border-foreground/40', 'hover:text-foreground'].forEach(function (c) { b.classList.toggle(c, !on); });
-        var dot = b.querySelector('[data-mode-dot]');
-        if (dot) {
-          dot.classList.toggle('border-foreground', on); dot.classList.toggle('border-foreground/30', !on);
-          var i = dot.firstElementChild; i.classList.toggle('scale-100', on); i.classList.toggle('scale-0', !on);
-        }
+        b.classList.toggle('border-foreground', on);
+        ['border-transparent', 'opacity-45', 'hover:opacity-75'].forEach(function (c) { b.classList.toggle(c, !on); });
       });
     };
     Array.prototype.forEach.call(modos, function (b) {
