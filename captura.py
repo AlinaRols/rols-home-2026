@@ -1290,6 +1290,11 @@ reconecta = """
 page = re.sub(r'<!DOCTYPE[^>]*>', "", page, flags=re.I)
 page = re.sub(r'</?(?:html|head|body)(?=[\s>])[^>]*>', "", page, flags=re.I)
 page = "<style>%s</style>%s%s" % ("\n".join(css), page.strip(), reconecta)
+# La bandeja de muestras (sample-tray.tsx) va en su propio fichero, el mismo
+# que carga Next: aqui se incrusta tal cual.
+if "data-sample-tray" in page:
+    muestras = (pathlib.Path.home() / "Desktop/Claude Proyectos/Rols | Web 2026/public/muestras.js").read_text()
+    page += "<script>" + muestras + "</script>"
 
 # Las imagenes que salen repetidas -las tiras sin fin llevan cada ficha tres
 # veces- no se embeben tres veces: pasan a un fichero en img/ junto al
