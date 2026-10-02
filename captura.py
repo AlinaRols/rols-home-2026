@@ -1068,10 +1068,23 @@ reconecta = """
       });
     };
     var modos = cfg.querySelectorAll('[data-mode]');
+    var marcaModo = function (activo) {
+      Array.prototype.forEach.call(modos, function (b) {
+        var on = b === activo;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        ['border-foreground', 'bg-surface'].forEach(function (c) { b.classList.toggle(c, on); });
+        ['border-line', 'text-foreground/60', 'hover:border-foreground/40', 'hover:text-foreground'].forEach(function (c) { b.classList.toggle(c, !on); });
+        var dot = b.querySelector('[data-mode-dot]');
+        if (dot) {
+          dot.classList.toggle('border-foreground', on); dot.classList.toggle('border-foreground/30', !on);
+          var i = dot.firstElementChild; i.classList.toggle('scale-100', on); i.classList.toggle('scale-0', !on);
+        }
+      });
+    };
     Array.prototype.forEach.call(modos, function (b) {
       b.addEventListener('click', function () {
         modo = b.getAttribute('data-mode');
-        marca(modos, b);
+        marcaModo(b);
         Array.prototype.forEach.call(cfg.querySelectorAll('[data-panel]'), function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== modo); });
         calcula();
       });
