@@ -1051,10 +1051,42 @@ reconecta = """
     var rolls = cfg.getAttribute('data-rolls').split(',').map(parseFloat);
     var cortes = (cfg.getAttribute('data-breaks') || '200,300').split(',').map(parseFloat);
     var selector = cfg.querySelector('[data-shape-select]');
-    var euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 });
+    var euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, useGrouping: 'always' });
     var campo = function (id) { return cfg.querySelector('[data-dim="' + id + '"]'); };
     var dentro = function (el, max) { var v = parseFloat(el.value); return isFinite(v) && v >= n('data-min') && v <= max ? v : undefined; };
+    // A medida o entrega rapida (medidas en stock), como en rug-configurator.tsx.
+    var modo = 'medida';
+    var tallas = cfg.querySelectorAll('[data-stock-size]');
+    var talla = tallas.length > 1 ? tallas[1] : tallas[0];
+    var marca = function (lista, activo) {
+      Array.prototype.forEach.call(lista, function (b) {
+        var on = b === activo;
+        b.classList.toggle('border-foreground', on);
+        b.classList.toggle('border-line', !on);
+        b.classList.toggle('hover:border-foreground/40', !on);
+        if (b.hasAttribute('data-mode')) b.setAttribute('aria-checked', on ? 'true' : 'false'); else b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    };
+    var modos = cfg.querySelectorAll('[data-mode]');
+    Array.prototype.forEach.call(modos, function (b) {
+      b.addEventListener('click', function () {
+        modo = b.getAttribute('data-mode');
+        marca(modos, b);
+        Array.prototype.forEach.call(cfg.querySelectorAll('[data-panel]'), function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== modo); });
+        calcula();
+      });
+    });
+    Array.prototype.forEach.call(tallas, function (b) {
+      b.addEventListener('click', function () { talla = b; marca(tallas, b); calcula(); });
+    });
     function calcula() {
+      if (modo === 'stock' && talla) {
+        var med = talla.getAttribute('data-stock-size').split('x').map(parseFloat);
+        var sw = med[0], sl = med[1];
+        var r0 = sw <= cortes[0] ? rolls[0] : sw <= cortes[1] ? rolls[1] : rolls[2];
+        cfg.querySelector('[data-price-out]').textContent = euros.format((sl / 100) * r0 * n('data-area-price') + ((2 * sw + 2 * sl) / 100) * n('data-finish-price'));
+        return;
+      }
       var forma = selector ? selector.value : 'rect';
       Array.prototype.forEach.call(cfg.querySelectorAll('[data-dims]'), function (d) { d.classList.toggle('hidden', d.getAttribute('data-dims') !== forma); });
       var w, l;
