@@ -1111,16 +1111,25 @@ reconecta = """
     Array.prototype.forEach.call(cfg.querySelectorAll('[data-dim]'), function (i) { i.addEventListener('input', calcula); });
   });
 
-  // Puntos de la galeria de la ficha en el movil (rug-gallery.tsx).
+  // Barrita de avance de la galeria de la ficha en el movil (rug-gallery.tsx).
   Array.prototype.forEach.call(document.querySelectorAll('[data-gal-track]'), function (pista) {
-    var puntos = pista.parentNode.querySelectorAll('[data-gal-dot]');
+    var barra = pista.parentNode.querySelector('[data-gal-bar]');
+    if (!barra) return;
     pista.addEventListener('scroll', function () {
-      var k = Math.round(pista.scrollLeft / Math.max(1, pista.clientWidth));
-      Array.prototype.forEach.call(puntos, function (d, i) {
-        d.classList.toggle('bg-foreground', i === k);
-        d.classList.toggle('bg-foreground/25', i !== k);
-      });
+      barra.style.transform = 'translateX(' + (pista.scrollLeft / Math.max(1, pista.clientWidth)) * 100 + '%)';
     }, { passive: true });
+  });
+
+  // "Leer mas" del texto de la coleccion en el movil (collection-text.tsx).
+  Array.prototype.forEach.call(document.querySelectorAll('[data-more-toggle]'), function (b) {
+    var caja = b.closest('[data-more]');
+    var txt = b.querySelector('[data-more-label]');
+    b.addEventListener('click', function () {
+      var abre = caja.getAttribute('data-state') !== 'open';
+      caja.setAttribute('data-state', abre ? 'open' : 'closed');
+      b.setAttribute('aria-expanded', abre ? 'true' : 'false');
+      if (txt) txt.textContent = b.getAttribute(abre ? 'data-label-less' : 'data-label-more');
+    });
   });
 
   // Cajon del pasaporte de producto (rug-passport.tsx).
