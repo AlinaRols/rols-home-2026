@@ -1079,6 +1079,7 @@ reconecta = """
     Array.prototype.forEach.call(modos, function (b) {
       b.addEventListener('click', function () {
         modo = b.getAttribute('data-mode');
+        cfg.setAttribute('data-modo', modo);
         marcaModo(b);
         Array.prototype.forEach.call(cfg.querySelectorAll('[data-panel]'), function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== modo); });
         calcula();
