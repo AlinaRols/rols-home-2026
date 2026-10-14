@@ -69,6 +69,8 @@ button.v2-cart{background:var(--color-beige,#d8cebe);border-color:transparent}bu
 .v2-tl-place{margin-top:4px;display:flex;align-items:center;gap:5px;font-size:11.5px;color:#797873;font-weight:300}
 .v2-tl-img{width:88px;height:66px;object-fit:cover;border-radius:8px}
 .v2-tl-desc{margin-top:6px;font-size:12px;line-height:1.65;color:#797873;font-weight:300}
+.v2-tl-img{cursor:zoom-in;transition:transform .35s ease,width .4s cubic-bezier(.22,.61,.36,1),height .4s cubic-bezier(.22,.61,.36,1)}.v2-tl-img:hover{transform:scale(1.04)}
+.v2-tl-step.is-big .v2-tl-head{grid-template-columns:minmax(0,1fr)}.v2-tl-step.is-big .v2-tl-img{grid-row:1;width:100%;height:220px;margin-bottom:12px;border-radius:12px;cursor:zoom-out}.v2-tl-step.is-big .v2-tl-img:hover{transform:none}
 @media(prefers-reduced-motion:reduce){.v2-tl-step,.v2-tl-dot,.v2-tl-fill{transition:none}.v2-tl-step{opacity:1;transform:none}}
 </style></head><body><style>/* [next]/internal/font/google/montserrat_14730532.module.css [app-client] (css) */
 @font-face {
@@ -6939,4 +6941,4 @@ function pinta(){var cr=caja.getBoundingClientRect(),limite=cr.top+cr.height*0.6
 function arranca(){pasos.forEach(function(p){p.classList.remove('is-on','is-now')});fill.style.transition='none';fill.style.height='0px';void fill.offsetHeight;fill.style.transition='';var n=0;pasos.forEach(function(p,i){setTimeout(function(){if(!cajon.querySelector('[data-pp-panel="proceso"]')||cajon.querySelector('[data-pp-panel="proceso"]').classList.contains('hidden'))return;pinta()},120*i)});}
 caja.addEventListener('scroll',function(){cancelAnimationFrame(t);t=requestAnimationFrame(pinta)},{passive:true});
 new MutationObserver(function(){if(cajon.getAttribute('data-state')==='open'&&!cajon.querySelector('[data-pp-panel="proceso"]').classList.contains('hidden'))setTimeout(arranca,260)}).observe(cajon,{attributes:true,attributeFilter:['data-state']});
-[].forEach.call(document.querySelectorAll('[data-pp-open="proceso"]'),function(b){b.addEventListener('click',function(){setTimeout(arranca,320)})});})();</script></body></html>
+[].forEach.call(document.querySelectorAll('[data-pp-open="proceso"]'),function(b){b.addEventListener('click',function(){setTimeout(arranca,320)})});})();</script><script>(function(){document.addEventListener('click',function(e){var img=e.target.closest('.v2-tl-img');if(!img)return;var li=img.closest('.v2-tl-step');var abre=!li.classList.contains('is-big');[].forEach.call(document.querySelectorAll('.v2-tl-step.is-big'),function(o){o.classList.remove('is-big')});if(abre){img.src=img.src.replace(/w=\d+&h=\d+/,'w=900&h=440');li.classList.add('is-big')}});})();</script></body></html>
