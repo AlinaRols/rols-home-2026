@@ -55,14 +55,13 @@ button.v2-cart{background:var(--color-beige,#d8cebe);border-color:transparent}bu
 .v2-comp{list-style:none;padding:0;margin:12px 0 0}.v2-comp li{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(30,32,33,.07);font-size:12.5px}.v2-comp li:last-child{border-bottom:0}.v2-comp-n{color:#303332;font-weight:300}.v2-comp-o{display:block;font-size:11px;color:#797873}.v2-comp-p{margin-left:auto;color:#303332;font-variant-numeric:tabular-nums}
 .v2-app-g{display:flex;align-items:center;gap:8px}.v2-app-ico{width:16px;height:16px;flex:none;opacity:.8}
 .v2-app-si,.v2-app-non{display:inline-flex;align-items:center;gap:6px;flex:none}.v2-app-si{color:#303332}.v2-app-non{color:rgba(30,32,33,.45)}.v2-app-ok,.v2-app-no{width:14px;height:14px}
-</style><style>/* Recorrido del proceso (variante B) con un poco de vida: la linea se va rellenando y cada hito se enciende al llegar a el (Alina, 14/10/2026). */
+</style><style>/* Recorrido del proceso (variante B): al abrir el cajon la linea se dibuja de arriba abajo una vez y los puntos se encienden a su paso (Alina eligio la 1, 14/10/2026). */
 .v2-tl-intro{margin-top:6px;font-size:12.5px;line-height:1.7;color:#797873;font-weight:300}
 .v2-tl{list-style:none;padding:0;margin:22px 0 0;position:relative}
-.v2-tl-line,.v2-tl-fill{position:absolute;left:5px;top:8px;width:0;border-left:1px solid rgba(30,32,33,.14)}.v2-tl-line{bottom:8px}.v2-tl-fill{height:0;border-left-color:#303332;transition:height .6s cubic-bezier(.22,.61,.36,1)}
-.v2-tl-step{position:relative;display:grid;grid-template-columns:11px minmax(0,1fr);column-gap:18px;padding:0 0 22px;opacity:.35;transform:translateY(6px);transition:opacity .5s ease,transform .5s ease}
-.v2-tl-step.is-on{opacity:1;transform:none}
-.v2-tl-dot{position:relative;z-index:1;display:block;width:11px;height:11px;margin-top:5px;border-radius:50%;background:#fff;border:1px solid #303332;transition:background .35s ease,transform .35s ease}
-.v2-tl-step.is-on .v2-tl-dot{background:#303332}.v2-tl-step.is-now .v2-tl-dot{transform:scale(1.35)}
+.v2-tl-line,.v2-tl-fill{position:absolute;left:5px;top:8px;width:0;border-left:1px solid rgba(30,32,33,.14)}.v2-tl-line{bottom:8px}.v2-tl-fill{height:0;border-left-color:#303332;transition:height 1.6s cubic-bezier(.4,0,.2,1)}
+.v2-tl-step{position:relative;display:grid;grid-template-columns:11px minmax(0,1fr);column-gap:18px;padding:0 0 22px}
+.v2-tl-dot{position:relative;z-index:1;display:block;width:11px;height:11px;margin-top:5px;border-radius:50%;background:#fff;border:1px solid #303332;transition:background .3s ease}
+.v2-tl-step.is-on .v2-tl-dot{background:#303332}
 .v2-tl-head{display:grid;grid-template-columns:minmax(0,1fr) 88px;column-gap:14px;align-items:start}
 .v2-tl-dur{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#8a8883}
 .v2-tl-t{margin-top:4px;font-size:17px;line-height:1.2;font-weight:300;color:#303332}
@@ -71,7 +70,7 @@ button.v2-cart{background:var(--color-beige,#d8cebe);border-color:transparent}bu
 .v2-tl-desc{margin-top:6px;font-size:12px;line-height:1.65;color:#797873;font-weight:300}
 .v2-tl-img{cursor:zoom-in;transition:transform .35s ease,width .4s cubic-bezier(.22,.61,.36,1),height .4s cubic-bezier(.22,.61,.36,1)}.v2-tl-img:hover{transform:scale(1.04)}
 .v2-tl-step.is-big .v2-tl-head{grid-template-columns:minmax(0,1fr)}.v2-tl-step.is-big .v2-tl-img{grid-row:1;width:100%;height:220px;margin-bottom:12px;border-radius:12px;cursor:zoom-out}.v2-tl-step.is-big .v2-tl-img:hover{transform:none}
-@media(prefers-reduced-motion:reduce){.v2-tl-step,.v2-tl-dot,.v2-tl-fill{transition:none}.v2-tl-step{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.v2-tl-dot,.v2-tl-fill{transition:none}}
 </style></head><body><style>/* [next]/internal/font/google/montserrat_14730532.module.css [app-client] (css) */
 @font-face {
   font-family: Montserrat;
@@ -6936,9 +6935,6 @@ main{--v2-gutter:clamp(24px,3.34vw,64px)}
  .v2-collection-horizontal .v2-collection-copy{max-width:min(1280px,139.6svh);margin-left:auto;margin-right:auto}
 }
 </style>
-<script>(function(){var cajon=document.querySelector('[data-pp-drawer]');if(!cajon)return;var caja=cajon.querySelector('.overflow-y-auto');var tl=cajon.querySelector('.v2-tl');if(!caja||!tl)return;var pasos=[].slice.call(tl.querySelectorAll('.v2-tl-step')),fill=tl.querySelector('.v2-tl-fill'),t=0;
-function pinta(){var cr=caja.getBoundingClientRect(),limite=cr.top+cr.height*0.62,ult=-1;pasos.forEach(function(p,i){var r=p.querySelector('.v2-tl-dot').getBoundingClientRect();var on=r.top<=limite;p.classList.toggle('is-on',on);if(on)ult=i;});pasos.forEach(function(p,i){p.classList.toggle('is-now',i===ult)});if(ult<0){fill.style.height='0px';return}var d=pasos[ult].querySelector('.v2-tl-dot'),tr=tl.getBoundingClientRect();fill.style.height=Math.max(0,d.getBoundingClientRect().top+5-tr.top-8)+'px';}
-function arranca(){pasos.forEach(function(p){p.classList.remove('is-on','is-now')});fill.style.transition='none';fill.style.height='0px';void fill.offsetHeight;fill.style.transition='';var n=0;pasos.forEach(function(p,i){setTimeout(function(){if(!cajon.querySelector('[data-pp-panel="proceso"]')||cajon.querySelector('[data-pp-panel="proceso"]').classList.contains('hidden'))return;pinta()},120*i)});}
-caja.addEventListener('scroll',function(){cancelAnimationFrame(t);t=requestAnimationFrame(pinta)},{passive:true});
-new MutationObserver(function(){if(cajon.getAttribute('data-state')==='open'&&!cajon.querySelector('[data-pp-panel="proceso"]').classList.contains('hidden'))setTimeout(arranca,260)}).observe(cajon,{attributes:true,attributeFilter:['data-state']});
-[].forEach.call(document.querySelectorAll('[data-pp-open="proceso"]'),function(b){b.addEventListener('click',function(){setTimeout(arranca,320)})});})();</script><script>(function(){document.addEventListener('click',function(e){var img=e.target.closest('.v2-tl-img');if(!img)return;var li=img.closest('.v2-tl-step');var abre=!li.classList.contains('is-big');[].forEach.call(document.querySelectorAll('.v2-tl-step.is-big'),function(o){o.classList.remove('is-big')});if(abre){img.src=img.src.replace(/w=\d+&h=\d+/,'w=900&h=440');li.classList.add('is-big')}});})();</script></body></html>
+<script>(function(){document.addEventListener('click',function(e){var img=e.target.closest('.v2-tl-img');if(!img)return;var li=img.closest('.v2-tl-step');var abre=!li.classList.contains('is-big');[].forEach.call(document.querySelectorAll('.v2-tl-step.is-big'),function(o){o.classList.remove('is-big')});if(abre){img.src=img.src.replace(/w=\d+&h=\d+/,'w=900&h=440');li.classList.add('is-big')}});})();</script><script>(function(){var cajon=document.querySelector('[data-pp-drawer]');if(!cajon)return;var tl=cajon.querySelector('.v2-tl');if(!tl)return;var pasos=[].slice.call(tl.querySelectorAll('.v2-tl-step')),fill=tl.querySelector('.v2-tl-fill'),timers=[];
+function arranca(){timers.forEach(clearTimeout);timers=[];pasos.forEach(function(p){p.classList.remove('is-on')});fill.style.transition='none';fill.style.height='0';void fill.offsetHeight;fill.style.transition='';var h=tl.getBoundingClientRect().height-16;if(matchMedia('(prefers-reduced-motion: reduce)').matches){fill.style.height=h+'px';pasos.forEach(function(p){p.classList.add('is-on')});return}fill.style.height=h+'px';pasos.forEach(function(p){var d=p.querySelector('.v2-tl-dot');var t=(d.offsetTop-3)/h*1600;timers.push(setTimeout(function(){p.classList.add('is-on')},t))})}
+[].forEach.call(document.querySelectorAll('[data-pp-open="proceso"]'),function(b){b.addEventListener('click',function(){setTimeout(arranca,350)})});})();</script></body></html>
