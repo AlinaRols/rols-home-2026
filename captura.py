@@ -1133,6 +1133,18 @@ reconecta = """
     });
   });
 
+  // El video con portada y boton de play (video-cover.tsx).
+  Array.prototype.forEach.call(document.querySelectorAll('[data-video-play]'), function (b) {
+    var caja = b.closest('[data-video-cover]');
+    var v = caja && caja.querySelector('video');
+    if (!v) return;
+    b.addEventListener('click', function () {
+      v.setAttribute('controls', '');
+      b.classList.add('hidden');
+      v.play();
+    });
+  });
+
   // Cajon del pasaporte de producto (rug-passport.tsx).
   (function () {
     var cajon = document.querySelector('[data-pp-drawer]');
