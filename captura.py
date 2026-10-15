@@ -371,7 +371,9 @@ reconecta = """
   // orden. Las flechas son las que llevan un svg dentro.
   var botones = Array.prototype.filter.call(
     document.querySelectorAll('main button[aria-label]'),
-    function (b) { return !!b.querySelector('svg'); });
+    // El play del video (video-cover.tsx) tambien es un boton con svg y
+    // etiqueta: fuera, o descuadra el emparejamiento (Interioristas).
+    function (b) { return !!b.querySelector('svg') && !b.hasAttribute('data-video-play'); });
   tiras.forEach(function (tira, i) {
     var par = botones.slice(i * 2, i * 2 + 2);
     // Tira sin fin (data-loop): las fichas van tres veces -copia, originales,
