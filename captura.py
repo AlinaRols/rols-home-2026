@@ -812,9 +812,12 @@ reconecta = """
         pr.textContent = pr.getAttribute('data-template').replace('{price}', b.getAttribute('data-price'));
         Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-link]'), function (a) { a.setAttribute('href', b.getAttribute('data-href')); });
       };
-      var pasa = function (d) { foto = (foto + d + n()) % n(); mueve(); };
-      // Con el raton encima, de la muestra al primer ambiente; al salir,
-      // vuelta a la muestra (rug-model-card.tsx, Alina 15/10/2026).
+      // Con el ambiente ya a la vista por el raton, la flecha salta a la
+      // foto siguiente, no a la que ya se ve (rug-model-card.tsx, Alina 15/10/2026).
+      var pasa = function (d) {
+        if (d === 1 && foto === 0 && n() > 2 && ficha.querySelector('[data-rug-ambient]') && window.matchMedia('(min-width: 768px)').matches) d = 2;
+        foto = (foto + d + n()) % n(); mueve();
+      };
       if (ant) ant.addEventListener('click', function () { pasa(-1); });
       if (sig) sig.addEventListener('click', function () { pasa(1); });
       var caja = pista.parentElement, desde = null;
