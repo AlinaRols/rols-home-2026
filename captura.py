@@ -395,6 +395,36 @@ reconecta = """
       tira.scrollLeft = tanda();
       tira.addEventListener('scroll', function () { if (!animando) recoloca(); }, { passive: true });
     }
+    // Arrastre con el raton pulsado, como en strip-scroller.tsx: si se ha
+    // arrastrado, el clic que suelta no abre la ficha.
+    (function () {
+      var desdeX = 0, desdeScroll = 0, pulsado = false, movido = false;
+      tira.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        pulsado = true; movido = false; desdeX = e.clientX; desdeScroll = tira.scrollLeft;
+      });
+      tira.addEventListener('pointermove', function (e) {
+        if (!pulsado) return;
+        var dx = e.clientX - desdeX;
+        if (!movido && Math.abs(dx) < 5) return;
+        if (!movido) { movido = true; tira.setPointerCapture(e.pointerId); tira.classList.add('cursor-grabbing'); }
+        tira.scrollLeft = desdeScroll - dx;
+      });
+      var suelta = function (e) {
+        if (!pulsado) return;
+        pulsado = false;
+        tira.classList.remove('cursor-grabbing');
+        if (tira.hasPointerCapture(e.pointerId)) tira.releasePointerCapture(e.pointerId);
+        if (movido) {
+          var traga = function (ev) { ev.preventDefault(); ev.stopPropagation(); };
+          tira.addEventListener('click', traga, { capture: true, once: true });
+          setTimeout(function () { tira.removeEventListener('click', traga, { capture: true }); }, 0);
+        }
+      };
+      tira.addEventListener('pointerup', suelta);
+      tira.addEventListener('pointercancel', suelta);
+      tira.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    })();
     if (par.length < 2) return;
     function mueve(dir) {
       if (sinFin) recoloca();
