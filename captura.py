@@ -811,6 +811,13 @@ reconecta = """
         Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-link]'), function (a) { a.setAttribute('href', b.getAttribute('data-href')); });
       };
       var pasa = function (d) { foto = (foto + d + n()) % n(); mueve(); };
+      // Con el raton encima, de la muestra al primer ambiente; al salir,
+      // vuelta a la muestra (rug-model-card.tsx, Alina 15/10/2026).
+      var hover = ficha.querySelector('[data-rug-hover-ambient]');
+      if (hover) {
+        hover.addEventListener('mouseenter', function () { if (foto === 0 && n() > 1) { foto = 1; mueve(); } });
+        hover.addEventListener('mouseleave', function () { foto = 0; mueve(); });
+      }
       if (ant) ant.addEventListener('click', function () { pasa(-1); });
       if (sig) sig.addEventListener('click', function () { pasa(1); });
       var caja = pista.parentElement, desde = null;
