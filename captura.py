@@ -780,6 +780,8 @@ reconecta = """
         pista.style.transform = 'translateX(-' + foto * 100 + '%)';
         barra.style.width = 100 / n() + '%';
         barra.style.transform = 'translateX(' + foto * 100 + '%)';
+        var amb = ficha.querySelector('[data-rug-ambient]');
+        if (amb) amb.classList.toggle('md:hidden', foto !== 0);
         // El logo de Rols Editions solo en la primera foto, que es la que
         // tiene el margen blanco debajo.
         var sello = ficha.querySelector('[data-rug-badge]');
