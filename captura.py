@@ -1133,6 +1133,27 @@ reconecta = """
     });
   });
 
+  // Los proyectos que van pasando (projects-rotator.tsx): cada 6 s se
+  // funden al otro turno; se para con el raton encima.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-proj-rotator]'), function (ul) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var turno = 0, quieto = false;
+    function pinta() {
+      ul.setAttribute('data-turno', turno);
+      Array.prototype.forEach.call(ul.querySelectorAll('[data-proj-turno]'), function (a) {
+        var on = a.getAttribute('data-proj-turno') === String(turno);
+        a.classList.toggle('opacity-100', on);
+        a.classList.toggle('opacity-0', !on);
+        a.classList.toggle('pointer-events-none', !on);
+        if (on) { a.removeAttribute('aria-hidden'); a.removeAttribute('tabindex'); }
+        else { a.setAttribute('aria-hidden', 'true'); a.setAttribute('tabindex', '-1'); }
+      });
+    }
+    ul.addEventListener('mouseenter', function () { quieto = true; });
+    ul.addEventListener('mouseleave', function () { quieto = false; });
+    setInterval(function () { if (quieto) return; turno = (turno + 1) % 2; pinta(); }, 6000);
+  });
+
   // El video con portada y boton de play (video-cover.tsx).
   Array.prototype.forEach.call(document.querySelectorAll('[data-video-play]'), function (b) {
     var caja = b.closest('[data-video-cover]');
