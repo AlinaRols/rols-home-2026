@@ -427,6 +427,16 @@ reconecta = """
       tira.addEventListener('dragstart', function (e) { e.preventDefault(); });
     })();
     if (par.length < 2) return;
+    // Si todas las fichas caben, fuera las flechas (y la cabecera que solo
+    // las tiene), como en strip-scroller.tsx (Alina, 02/11/2026).
+    var cabecera = par[0].closest('[data-strip-head]');
+    var cabe = function () {
+      var sobra = tira.scrollWidth - tira.clientWidth > 2;
+      par.forEach(function (b) { b.style.display = sobra ? '' : 'none'; });
+      if (cabecera) cabecera.style.display = sobra ? '' : 'none';
+    };
+    cabe();
+    window.addEventListener('resize', cabe);
     function mueve(dir) {
       if (sinFin) recoloca();
       var desde = tira.scrollLeft;
