@@ -850,7 +850,7 @@ reconecta = """
         [ant, sig].forEach(function (f) { if (f) f.style.display = fotos.length > 1 ? '' : 'none'; });
         ficha.querySelector('[data-rug-color]').textContent = b.getAttribute('data-name');
         var pr = ficha.querySelector('[data-rug-price]');
-        pr.textContent = pr.getAttribute('data-template').replace('{price}', b.getAttribute('data-price'));
+        if (pr) pr.textContent = pr.getAttribute('data-template').replace('{price}', b.getAttribute('data-price'));
         Array.prototype.forEach.call(ficha.querySelectorAll('[data-rug-link]'), function (a) { a.setAttribute('href', b.getAttribute('data-href')); });
       };
       // Con el ambiente ya a la vista por el raton, la flecha salta a la
