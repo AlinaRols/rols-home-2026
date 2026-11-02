@@ -373,7 +373,8 @@ reconecta = """
     document.querySelectorAll('main button[aria-label]'),
     // El play del video (video-cover.tsx) tambien es un boton con svg y
     // etiqueta: fuera, o descuadra el emparejamiento (Interioristas).
-    function (b) { return !!b.querySelector('svg') && !b.hasAttribute('data-video-play'); });
+    // Tampoco los del visor de fotos (data-lb): tiene flechas y cierre con svg.
+    function (b) { return !!b.querySelector('svg') && !b.hasAttribute('data-video-play') && !b.closest('[data-lb]'); });
   tiras.forEach(function (tira, i) {
     var par = botones.slice(i * 2, i * 2 + 2);
     // Tira sin fin (data-loop): las fichas van tres veces -copia, originales,
