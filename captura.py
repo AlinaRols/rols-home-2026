@@ -77,7 +77,7 @@ page = re.sub(r'<link[^>]+rel="stylesheet"[^>]*>', "", page)
 # :root, que no depende de ninguna clase.
 hoja = "\n".join(css)
 declaraciones = []
-for var in ("--font-montserrat", "--font-league-spartan"):
+for var in ("--font-montserrat", "--font-league-spartan", "--font-editions"):
     m = re.search(re.escape(var) + r"\s*:\s*([^;}]+)", hoja)
     if m:
         declaraciones.append("%s:%s" % (var, m.group(1).strip()))
