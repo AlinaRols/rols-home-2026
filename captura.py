@@ -375,6 +375,15 @@ reconecta = """
     Array.prototype.forEach.call(g.querySelectorAll('[data-galeria-ir]'), function (b) {
       b.addEventListener('click', function () { u.scrollTo({ left: +b.getAttribute('data-galeria-ir') * u.clientWidth, behavior: 'smooth' }); });
     });
+    // Las flechitas de los lados, como en las fichas: dan la vuelta.
+    var n0 = rayas.length;
+    var pasa = function (dir) {
+      var n = (Math.round(u.scrollLeft / u.clientWidth) + dir + n0) % n0;
+      u.scrollTo({ left: n * u.clientWidth, behavior: 'smooth' });
+    };
+    var a = g.querySelector('[data-galeria-prev]'), b = g.querySelector('[data-galeria-next]');
+    if (a) a.addEventListener('click', function () { pasa(-1); });
+    if (b) b.addEventListener('click', function () { pasa(1); });
     u.addEventListener('scroll', function () {
       var n = Math.round(u.scrollLeft / u.clientWidth);
       rayas.forEach(function (r, i) {
