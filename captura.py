@@ -349,7 +349,7 @@ if DESTINO == "publico":
     page = page.replace('href="/"', 'href="/rols-home-2026/"')
     # Las demas paginas de la maqueta -diseñadores y su ficha, colecciones,
     # proyectos, interioristas- tambien son carpetas del enlace publico.
-    page = re.sub(r'href="/(disenadores|colecciones|proyectos|interioristas)(/[a-z0-9-]+)?"',
+    page = re.sub(r'href="/(disenadores|colecciones|proyectos-alfombras-moquetas|proyectos|interioristas)(/[a-z0-9-]+)?"',
                   lambda m: 'href="/rols-home-2026/%s%s/"' % (m.group(1), m.group(2) or ""), page)
 
 # Sin el runtime de Next hay que reconectar a mano lo que se mueve.
