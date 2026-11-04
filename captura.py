@@ -366,9 +366,18 @@ reconecta = """
     arranca();
   }
 })(function () {
+  // Mini galerias de coleccion (Diseñadores, collection-gallery.tsx): una
+  // foto cada vez, las flechas avanzan un ancho entero y el iman encaja.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-galeria]'), function (g) {
+    var u = g.querySelector('ul');
+    var mueve = function (dir) { u.scrollBy({ left: dir * u.clientWidth, behavior: 'smooth' }); };
+    var a = g.querySelector('[data-galeria-prev]'), b = g.querySelector('[data-galeria-next]');
+    if (a) a.addEventListener('click', function () { mueve(-1); });
+    if (b) b.addEventListener('click', function () { mueve(1); });
+  });
   // Flechas de las tiras.
   var tiras = Array.prototype.filter.call(document.querySelectorAll('main ul'), function (u) {
-    return getComputedStyle(u).overflowX === 'auto';
+    return getComputedStyle(u).overflowX === 'auto' && !u.closest('[data-galeria]');
   });
   // Solo las flechas: los puntitos del carrusel de proyectos tambien son
   // botones con etiqueta, y si entran aqui descuadran el emparejamiento por
@@ -378,7 +387,7 @@ reconecta = """
     // El play del video (video-cover.tsx) tambien es un boton con svg y
     // etiqueta: fuera, o descuadra el emparejamiento (Interioristas).
     // Tampoco los del visor de fotos (data-lb): tiene flechas y cierre con svg.
-    function (b) { return !!b.querySelector('svg') && !b.hasAttribute('data-video-play') && !b.closest('[data-lb]'); });
+    function (b) { return !!b.querySelector('svg') && !b.hasAttribute('data-video-play') && !b.closest('[data-lb]') && !b.closest('[data-galeria]'); });
   tiras.forEach(function (tira, i) {
     var par = botones.slice(i * 2, i * 2 + 2);
     // Tira sin fin (data-loop): las fichas van tres veces -copia, originales,
