@@ -366,14 +366,23 @@ reconecta = """
     arranca();
   }
 })(function () {
-  // Mini galerias de coleccion (Diseñadores, collection-gallery.tsx): una
-  // foto cada vez, las flechas avanzan un ancho entero y el iman encaja.
+  // Mini galerias de coleccion (Diseñadores, collection-gallery.tsx).
+  // Mini galerias con rayitas: cada rayita lleva a su foto y la de la foto
+  // que se ve se oscurece al desplazar.
   Array.prototype.forEach.call(document.querySelectorAll('[data-galeria]'), function (g) {
     var u = g.querySelector('ul');
-    var mueve = function (dir) { u.scrollBy({ left: dir * u.clientWidth, behavior: 'smooth' }); };
-    var a = g.querySelector('[data-galeria-prev]'), b = g.querySelector('[data-galeria-next]');
-    if (a) a.addEventListener('click', function () { mueve(-1); });
-    if (b) b.addEventListener('click', function () { mueve(1); });
+    var rayas = Array.prototype.slice.call(g.querySelectorAll('[data-galeria-raya]'));
+    Array.prototype.forEach.call(g.querySelectorAll('[data-galeria-ir]'), function (b) {
+      b.addEventListener('click', function () { u.scrollTo({ left: +b.getAttribute('data-galeria-ir') * u.clientWidth, behavior: 'smooth' }); });
+    });
+    u.addEventListener('scroll', function () {
+      var n = Math.round(u.scrollLeft / u.clientWidth);
+      rayas.forEach(function (r, i) {
+        r.classList.toggle('bg-foreground/70', i === n);
+        r.classList.toggle('bg-foreground/15', i !== n);
+        r.classList.toggle('group-hover/raya:bg-foreground/35', i !== n);
+      });
+    }, { passive: true });
   });
   // Flechas de las tiras.
   var tiras = Array.prototype.filter.call(document.querySelectorAll('main ul'), function (u) {
