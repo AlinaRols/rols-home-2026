@@ -349,7 +349,7 @@ if DESTINO == "publico":
     page = page.replace('href="/"', 'href="/rols-home-2026/"')
     # Las demas paginas de la maqueta -diseñadores y su ficha, colecciones,
     # proyectos, interioristas- tambien son carpetas del enlace publico.
-    page = re.sub(r'href="/(disenadores|colecciones|proyectos-alfombras-moquetas|proyectos|interioristas)(/[a-z0-9-]+)?"',
+    page = re.sub(r'href="/(disenadores|colecciones|proyectos-alfombras-moquetas|proyectos|interioristas|academy)(/[a-z0-9-]+)?"',
                   lambda m: 'href="/rols-home-2026/%s%s/"' % (m.group(1), m.group(2) or ""), page)
 
 # Sin el runtime de Next hay que reconectar a mano lo que se mueve.
@@ -392,6 +392,19 @@ reconecta = """
         r.classList.toggle('group-hover/raya:bg-foreground/35', i !== n);
       });
     }, { passive: true });
+  });
+  // Rols Academy (academy-videos.tsx): el play del video grande y la lista
+  // de videos; el YouTube (sin cookies) solo se carga al pulsar.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-yt]'), function (r) {
+    var escena = r.querySelector('[data-yt-stage]');
+    var lista = r.querySelectorAll('[data-yt-pick]');
+    var pon = function (id) {
+      escena.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0"></iframe>';
+      Array.prototype.forEach.call(lista, function (b) { b.setAttribute('data-active', b.getAttribute('data-yt-pick') === id ? 'true' : 'false'); });
+    };
+    var play = r.querySelector('[data-yt-play]');
+    if (play) play.addEventListener('click', function () { pon(play.getAttribute('data-yt-play')); });
+    Array.prototype.forEach.call(lista, function (b) { b.addEventListener('click', function () { pon(b.getAttribute('data-yt-pick')); }); });
   });
   // Flechas de las tiras.
   var tiras = Array.prototype.filter.call(document.querySelectorAll('main ul'), function (u) {
