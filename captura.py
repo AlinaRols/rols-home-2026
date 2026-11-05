@@ -398,12 +398,15 @@ reconecta = """
   Array.prototype.forEach.call(document.querySelectorAll('[data-yt]'), function (r) {
     var escena = r.querySelector('[data-yt-stage]');
     var lista = r.querySelectorAll('[data-yt-pick]');
-    var pon = function (id) {
-      escena.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0"></iframe>';
+    // En la variante "fila" cada video tiene su propia escena: se reproduce
+    // en la del boton pulsado.
+    var pon = function (id, donde) {
+      (donde || escena).innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0"></iframe>';
       Array.prototype.forEach.call(lista, function (b) { b.setAttribute('data-active', b.getAttribute('data-yt-pick') === id ? 'true' : 'false'); });
     };
-    var play = r.querySelector('[data-yt-play]');
-    if (play) play.addEventListener('click', function () { pon(play.getAttribute('data-yt-play')); });
+    Array.prototype.forEach.call(r.querySelectorAll('[data-yt-play]'), function (play) {
+      play.addEventListener('click', function () { pon(play.getAttribute('data-yt-play'), play.closest('[data-yt-stage]')); });
+    });
     Array.prototype.forEach.call(lista, function (b) { b.addEventListener('click', function () { pon(b.getAttribute('data-yt-pick')); }); });
   });
   // Flechas de las tiras.
