@@ -397,6 +397,9 @@ reconecta = """
   // de videos; el YouTube (sin cookies) solo se carga al pulsar.
   Array.prototype.forEach.call(document.querySelectorAll('[data-yt]'), function (r) {
     var escena = r.querySelector('[data-yt-stage]');
+    // El bucle de portada: React no escribe el atributo muted y sin el el
+    // navegador no lo arranca solo.
+    Array.prototype.forEach.call(r.querySelectorAll('video'), function (v) { v.muted = true; var p = v.play(); if (p) p.catch(function () {}); });
     var lista = r.querySelectorAll('[data-yt-pick]');
     // En la variante "fila" cada video tiene su propia escena: se reproduce
     // en la del boton pulsado.
