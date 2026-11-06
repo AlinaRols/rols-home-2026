@@ -351,10 +351,6 @@ if DESTINO == "publico":
     # proyectos, interioristas- tambien son carpetas del enlace publico.
     page = re.sub(r'href="/(disenadores|colecciones|proyectos-alfombras-moquetas|proyectos|interioristas|academy)(/[a-z0-9-]+)?"',
                   lambda m: 'href="/rols-home-2026/%s%s/"' % (m.group(1), m.group(2) or ""), page)
-    # Hoteles: la publicada es la version corta (Alina, 06/11/2026: "el link
-    # de esta landing haz que vaya a /hoteles/corta/").
-    page = page.replace('href="/rols-home-2026/proyectos-alfombras-moquetas/hoteles/"',
-                        'href="/rols-home-2026/proyectos-alfombras-moquetas/hoteles/corta/"')
 
 # Sin el runtime de Next hay que reconectar a mano lo que se mueve.
 reconecta = """
