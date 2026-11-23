@@ -9170,16 +9170,24 @@ body{font-family:var(--font-sans)}</style><meta charSet="utf-8"/><meta name="vie
       var grupos = qs.map(function (q) { return [q].concat(sinonimos[q] || []); });
       var qn = norm(texto);
       var res = [];
+      var hayBuenos = false;
       preparado.forEach(function (p) {
-        var total = 0;
+        var total = 0, peor = 3;
         for (var g = 0; g < grupos.length; g++) {
           var enTodo = mejor(grupos[g], p.todo);
           if (!enTodo) return;
+          if (enTodo < peor) peor = enTodo;
           total += enTodo + (mejor(grupos[g], p.titulo) ? 2 : 0);
         }
         if (p.tituloNorm.indexOf(qn) === 0) total += 5;
-        res.push({ p: p, puntos: total });
+        if (peor >= 2) hayBuenos = true;
+        res.push({ p: p, puntos: total, peor: peor });
       });
+      // Si hay resultados que casan de verdad (palabra entera o principio de
+      // palabra), fuera los que solo se parecen: buscando "palma" salia Luna
+      // por "Palladium". Los parecidos solo cuentan si no hay nada mejor
+      // ("strta" -> Strata).
+      if (hayBuenos) res = res.filter(function (r) { return r.peor >= 2; });
       res.sort(function (a, b) { return b.puntos - a.puntos || a.p.n - b.p.n; });
       return { lista: res.map(function (r) { return r.p.e; }), qs: qs };
     }
