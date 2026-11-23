@@ -1438,6 +1438,15 @@ page = "<style>%s</style>%s%s" % ("\n".join(css), page.strip(), reconecta)
 if "data-sample-tray" in page:
     muestras = (pathlib.Path.home() / "Desktop/Claude Proyectos/Rols | Web 2026/public/muestras.js").read_text()
     page += "<script>" + muestras + "</script>"
+# El buscador propio (search-index.ts + buscador.js, 23/11/2026): el indice
+# viaja en data-indice; aqui va el script y la lista de paginas publicadas,
+# para que los resultados que no tienen pagina aqui lleven a rolscarpets.com.
+if "data-buscador" in page:
+    import json, os
+    buscador = (pathlib.Path.home() / "Desktop/Claude Proyectos/Rols | Web 2026/public/buscador.js").read_text()
+    publicadas = sorted(str(p.parent).replace("\\", "/").lstrip("./") for p in pathlib.Path(".").rglob("index.html") if ".git" not in p.parts)
+    publicadas = ["" if x == "." else x for x in publicadas]
+    page += "<script>window.ROLS_PUBLICADAS=" + json.dumps(publicadas) + ";</script><script>" + buscador + "</script>"
 
 # Las imagenes que salen repetidas -las tiras sin fin llevan cada ficha tres
 # veces- no se embeben tres veces: pasan a un fichero en img/ junto al
